@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function active() { return signedIn() && profile().active == true; }
+    function admin() { return active() && profile().role == 'admin'; }
+    function manager() { return active() && profile().role in ['admin', 'officer']; }
+    function validUser(d) {
+      return d.id is string && d.name is string && d.name.size() > 0 && d.email is string
+        && d.phone is string && d.area is string && d.division is string && d.province is string
+        && d.active is bool && d.role in ['citizen', 'officer', 'gn', 'admin'];
+    }
+    function rank(status) { return status == 'Submitted' ? 0 : status == 'Assigned' ? 1 : status == 'In Progress' ? 2 : status == 'Resolved' ? 3 : -1; }
+    function validComplaint(d) {
+      return d.id is string && d.citizenId is string && d.description is string
+        && d.description.size() >= 10 && d.description.size() <= 2000
+        && d.address is string && d.address.size() > 0 && d.area is string && d.area.size() > 0
+        && d.division is string && d.division.size() > 0 && d.localAuthority is string && d.localAuthority.size() > 0
+        && d.latitude is number && d.longitude is number && d.latitude >= -90 && d.latitude <= 90
+        && d.longitude >= -180 && d.longitude <= 180 && d.priority in ['Low', 'Medium', 'High']
+        && rank(d.status) >= 0 && d.history is list && d.createdAt is string && d.updatedAt is string;
+    }
+    match /users/{id} {
+      allow get, list: if signedIn() && (resource.data.id == request.auth.uid || manager());
+      allow create: if signedIn() && id == request.auth.uid && request.resource.data.id == id
+        && request.resource.data.role == 'citizen' && request.resource.data.active == true && validUser(request.resource.data);
+      allow update: if validUser(request.resource.data) && request.resource.data.id == id &&
+        ((admin() && (id != request.auth.uid || (request.resource.data.active == true && request.resource.data.role == 'admin')))
+        || (active() && id == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'phone', 'imageUrl'])));
+      allow delete: if false;
+    }
+    match /complaints/{id} {
+      allow read: if active() && (manager() || resource.data.citizenId == request.auth.uid
+        || (profile().role == 'gn' && resource.data.division == profile().division));
+      allow create: if active() && profile().role == 'citizen' && request.resource.data.id == id
+        && request.resource.data.citizenId == request.auth.uid && request.resource.data.status == 'Submitted'
+        && !request.resource.data.keys().hasAny(['assignedOfficerId', 'assignmentNote', 'feedback'])
+        && request.resource.data.history.size() == 1 && request.resource.data.history[0].status == 'Submitted'
+        && exists(/databases/$(database)/documents/categories/$(request.resource.data.categoryId))
+        && request.resource.data.issueType in get(/databases/$(database)/documents/categories/$(request.resource.data.categoryId)).data.types
+        && validComplaint(request.resource.data);
+      allow update: if active() && validComplaint(request.resource.data) && request.resource.data.id == id
+        && request.resource.data.citizenId == resource.data.citizenId
+        && ((manager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'priority', 'assignedOfficerId', 'division', 'assignmentNote', 'updatedAt', 'history'])
+          && rank(request.resource.data.status) >= rank(resource.data.status)
+          && (request.resource.data.status == 'Submitted' || (request.resource.data.assignedOfficerId is string
+            && get(/databases/$(database)/documents/users/$(request.resource.data.assignedOfficerId)).data.role == 'officer'
+            && get(/databases/$(database)/documents/users/$(request.resource.data.assignedOfficerId)).data.active == true)))
+        || (resource.data.citizenId == request.auth.uid && resource.data.status == 'Submitted'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['description', 'updatedAt']))
+        || (resource.data.citizenId == request.auth.uid && resource.data.status == 'Resolved'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback'])
+          && request.resource.data.feedback.rating is int && request.resource.data.feedback.rating >= 1
+          && request.resource.data.feedback.rating <= 5 && request.resource.data.feedback.comment is string));
+      allow delete: if active() && resource.data.citizenId == request.auth.uid && resource.data.status == 'Submitted';
+    }
+    match /notifications/{id} {
+      allow read, delete: if active() && resource.data.userId == request.auth.uid;
+      allow create: if active() && request.resource.data.id == id && request.resource.data.read == false
+        && request.resource.data.title is string && request.resource.data.body is string
+        && request.resource.data.createdAt is string
+        && getAfter(/databases/$(database)/documents/complaints/$(request.resource.data.complaintId)).data.citizenId == request.resource.data.userId
+        && (manager() || request.resource.data.userId == request.auth.uid);
+      allow update: if active() && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) && request.resource.data.read is bool;
+    }
+    match /categories/{id} {
+      allow read: if active();
+      allow create, update: if admin() && request.resource.data.id == id && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.types is list && request.resource.data.types.size() > 0
+        && request.resource.data.priority in ['Low', 'Medium', 'High'];
+      allow delete: if admin();
+    }
+    match /contacts/{id} {
+      allow read: if active();
+      allow create, update: if admin() && request.resource.data.id == id && request.resource.data.name is string
+        && request.resource.data.phone is string && request.resource.data.email is string;
+      allow delete: if admin();
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
