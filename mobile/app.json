@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Citizen Connect", "slug": "citizen-connect", "version": "1.0.0", "orientation": "portrait", "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "lk.citizenconnect.app" },
+    "android": { "package": "lk.citizenconnect.app" },
+    "plugins": ["expo-secure-store", ["expo-image-picker", { "photosPermission": "Attach a photo of a civic issue.", "cameraPermission": "Take a photo of a civic issue." }], ["expo-location", { "locationWhenInUsePermission": "Confirm the location of your civic report." }]],
+    "web": { "bundler": "metro" }
+  }
+}
