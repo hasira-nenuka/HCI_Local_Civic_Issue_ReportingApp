@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Citizen Connect",
+    "slug": "citizen-connect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "lk.citizenconnect.hci"
+    },
+    "android": {
+      "package": "lk.citizenconnect.hci",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Citizen Connect to attach photos to your reports.",
+          "cameraPermission": "Allow Citizen Connect to photograph a civic issue.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Citizen Connect to confirm the location of your civic issue."
+        }
+      ],
+      "expo-font",
+      "expo-splash-screen"
+    ],
+    "scheme": "citizenconnect"
+  }
+}
