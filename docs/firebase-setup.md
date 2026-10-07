@@ -1,6 +1,6 @@
-# Connect Firebase after reviewing the demo
+# Set up real authentication and shared data
 
-The app runs without Firebase. Cloud services cannot be provisioned here because you have not created a project. Do these steps in your own Firebase account.
+Real Firebase mode is now the default. Without configuration the app displays a setup screen and does not offer demo sign-in. Cloud services cannot be provisioned here because you have not created a project. Do these steps in your own Firebase account.
 
 1. Create a Firebase project, for example `citizen-connect-hci`, and register a **web app** to obtain the JS SDK config. This config also works with the Expo Firebase JS SDK.
 2. Enable Authentication → Sign-in method → Email/Password.
@@ -34,7 +34,8 @@ To provision officers/GN users, create each Auth account and matching `users/{UI
 
 ## Acceptance checks after setup
 
-- Citizen: register/login/logout, restart persistence, wrong password, profile update and password reauthentication.
+- Citizen: register/login/logout, restart persistence, wrong password, Forgot password email delivery, profile update and password reauthentication.
+- Two devices: edit the same record concurrently; stale changes must be rejected rather than overwrite the other device.
 - Upload a photo; verify Storage URL and image rendering on a second device.
 - Submit a complaint; verify the `complaints` and `notifications` documents.
 - Officer: assign, prioritize and progress the complaint; citizen receives its in-app notification in real time.
@@ -47,10 +48,29 @@ These are pending until a real project is configured. Rules should be exercised 
 
 ## Known cloud limits
 
-In-app notifications are created atomically with app-driven status changes; there is no background push service or Cloud Function for status changes made directly in Console. Automatic server notifications for external writers need a trusted backend. Photo URLs are Firebase download URLs; treat them as shareable links and use only evaluation photos. Removing a complaint/profile photo currently leaves its stored object until the owner cleans it up in Console. Simultaneous edits to the same complaint need additional conflict handling. Category-in-use deletion checks occur in the UI/service; Firestore cannot query all complaints inside a rule to enforce that constraint.
+In-app notifications are created atomically with app-driven status changes; there is no background push service or Cloud Function for status changes made directly in Console. Automatic server notifications for external writers need a trusted backend. Photo URLs are Firebase download URLs; treat them as shareable links and use only evaluation photos. Removing a complaint/profile photo currently leaves its stored object until the owner cleans it up in Console. Existing-record writes now use transactions and reject stale edits; wait for the live listener to refresh, then retry. Transactions require an internet connection. Category-in-use deletion checks occur in the UI/service; Firestore cannot query all complaints inside a rule to enforce that constraint.
 
 Official documentation: [Expo Firebase guide](https://docs.expo.dev/guides/using-firebase/), [Firebase setup](https://firebase.google.com/docs/web/setup), [Auth](https://firebase.google.com/docs/auth/web/password-auth), [Firestore rules](https://firebase.google.com/docs/firestore/security/rules-conditions).
 
 ## Android APK map setup
 
 Expo Go includes the map setup. For your own Android APK, enable Maps SDK for Android in Google Cloud, create an Android-restricted key for package `lk.citizenconnect.hci` and the build's signing SHA-1, then set `GOOGLE_MAPS_ANDROID_API_KEY` in the build environment. `app.config.ts` adds the native maps plugin when the value is present. Configure it in EAS environment settings before building. iOS uses Apple Maps by default. See [SDK 57 map setup](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/).
+
+## Start after configuring
+
+In the VS Code PowerShell terminal:
+
+```powershell
+cd "C:\Users\hasir\Desktop\Local civic-issue reporting app\citizen-connect"
+Copy-Item .env.example .env
+```
+
+Edit `.env` with the six config values from Firebase Console ? Project settings ? Your apps ? web app. Keep `EXPO_PUBLIC_BACKEND=firebase`. Then run:
+
+```powershell
+npx.cmd expo start --go --clear
+```
+
+Register a real citizen account in the app. Confirm it appears under Authentication ? Users and that `users/{UID}` appears in Firestore. Close/reopen the app and check profile persistence. Bootstrap your administrator as described above, create categories, and provision the officer account. Submit a citizen report and update it from the officer on another phone. Verify Firestore changes and the citizen timeline before treating setup as complete.
+
+For isolated sample-data regression tests only, explicitly set `EXPO_PUBLIC_BACKEND=demo` in the export environment. Never ship that setting as the real app. Existing local demo records are not migrated into Firebase.

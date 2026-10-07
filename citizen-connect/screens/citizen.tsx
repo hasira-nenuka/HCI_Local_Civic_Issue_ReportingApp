@@ -347,17 +347,19 @@ export function DetailsScreen() {
         title="Track Complaint"
         onPress={() => nav.navigate({ pathname: "/Track", params: { id } })}
       />
-      <Button
-        title="View Location"
-        secondary
-        onPress={() =>
-          import("react-native").then(({ Linking }) =>
-            Linking.openURL(
-              `https://www.openstreetmap.org/?mlat=${c.latitude}&mlon=${c.longitude}#map=17/${c.latitude}/${c.longitude}`,
-            ),
-          )
-        }
-      />
+      {typeof c.latitude === "number" && typeof c.longitude === "number" && (
+        <Button
+          title="View Location"
+          secondary
+          onPress={() =>
+            import("react-native").then(({ Linking }) =>
+              Linking.openURL(
+                `https://www.openstreetmap.org/?mlat=${c.latitude}&mlon=${c.longitude}#map=17/${c.latitude}/${c.longitude}`,
+              ),
+            )
+          }
+        />
+      )}
       {canManage(app.user!) && c.status !== "Resolved" && (
         <Button
           title="Assign details"

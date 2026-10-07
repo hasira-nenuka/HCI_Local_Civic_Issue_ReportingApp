@@ -12,17 +12,30 @@ service cloud.firestore {
         && d.active is bool && d.role in ['citizen', 'officer', 'gn', 'admin'];
     }
     function rank(status) { return status == 'Submitted' ? 0 : status == 'Assigned' ? 1 : status == 'In Progress' ? 2 : status == 'Resolved' ? 3 : -1; }
+    function validCoordinates(d) {
+      return !d.keys().hasAny(['latitude', 'longitude'])
+        || (d.keys().hasAll(['latitude', 'longitude']) && d.latitude is number && d.longitude is number
+          && d.latitude >= -90 && d.latitude <= 90 && d.longitude >= -180 && d.longitude <= 180);
+    }
     function validComplaint(d) {
       return d.id is string && d.citizenId is string && d.description is string
         && d.description.size() >= 10 && d.description.size() <= 2000
         && d.address is string && d.address.size() > 0 && d.area is string && d.area.size() > 0
         && d.division is string && d.division.size() > 0 && d.localAuthority is string && d.localAuthority.size() > 0
-        && d.latitude is number && d.longitude is number && d.latitude >= -90 && d.latitude <= 90
-        && d.longitude >= -180 && d.longitude <= 180 && d.priority in ['Low', 'Medium', 'High']
+        && validCoordinates(d) && d.priority in ['Low', 'Medium', 'High']
         && rank(d.status) >= 0 && d.history is list && d.createdAt is string && d.updatedAt is string;
     }
+    function validHistoryUpdate(d, old) {
+      return (d.status == old.status && d.history == old.history)
+        || (d.status != old.status && d.history.size() == old.history.size() + 1
+          && d.history[d.history.size() - 1].status == d.status
+          && d.history[d.history.size() - 1].at == d.updatedAt
+          && d.history.removeAll([d.history[d.history.size() - 1]]) == old.history);
+    }
     match /users/{id} {
-      allow get, list: if signedIn() && (resource.data.id == request.auth.uid || manager());
+      // Own-profile lookup must also work before signup creates the document.
+      allow get: if signedIn() && (id == request.auth.uid || manager());
+      allow list: if signedIn() && (resource.data.id == request.auth.uid || manager());
       allow create: if signedIn() && id == request.auth.uid && request.resource.data.id == id
         && request.resource.data.role == 'citizen' && request.resource.data.active == true && validUser(request.resource.data);
       allow update: if validUser(request.resource.data) && request.resource.data.id == id &&
@@ -36,6 +49,7 @@ service cloud.firestore {
       allow create: if active() && profile().role == 'citizen' && request.resource.data.id == id
         && request.resource.data.citizenId == request.auth.uid && request.resource.data.status == 'Submitted'
         && !request.resource.data.keys().hasAny(['assignedOfficerId', 'assignmentNote', 'feedback'])
+        && request.resource.data.priority == get(/databases/$(database)/documents/categories/$(request.resource.data.categoryId)).data.priority
         && request.resource.data.history.size() == 1 && request.resource.data.history[0].status == 'Submitted'
         && exists(/databases/$(database)/documents/categories/$(request.resource.data.categoryId))
         && request.resource.data.issueType in get(/databases/$(database)/documents/categories/$(request.resource.data.categoryId)).data.types
@@ -44,6 +58,7 @@ service cloud.firestore {
         && request.resource.data.citizenId == resource.data.citizenId
         && ((manager() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'priority', 'assignedOfficerId', 'division', 'assignmentNote', 'updatedAt', 'history'])
           && rank(request.resource.data.status) >= rank(resource.data.status)
+          && validHistoryUpdate(request.resource.data, resource.data)
           && (request.resource.data.status == 'Submitted' || (request.resource.data.assignedOfficerId is string
             && get(/databases/$(database)/documents/users/$(request.resource.data.assignedOfficerId)).data.role == 'officer'
             && get(/databases/$(database)/documents/users/$(request.resource.data.assignedOfficerId)).data.active == true)))

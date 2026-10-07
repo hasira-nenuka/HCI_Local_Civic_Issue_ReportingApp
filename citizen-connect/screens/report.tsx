@@ -29,6 +29,7 @@ export function ReportWizardScreen() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [draft, setDraft] = useState<ComplaintDraft>({
     categoryId,
     issueType: "",
@@ -37,8 +38,6 @@ export function ReportWizardScreen() {
     description: "",
     division: app.user!.division,
     address: "",
-    latitude: NaN,
-    longitude: NaN,
   });
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -55,7 +54,7 @@ export function ReportWizardScreen() {
     "Select Area",
     "Select Local Authority",
     "Report Issue",
-    "Confirm Location",
+    "Issue Location",
   ];
   const options =
     step === 0 ? category.types : step === 1 ? areas : authorities;
@@ -92,6 +91,7 @@ export function ReportWizardScreen() {
   }
   async function gps() {
     setWorking(true);
+    setLocating(true);
     setError("");
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
@@ -120,21 +120,22 @@ export function ReportWizardScreen() {
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      setLocating(false);
       setWorking(false);
     }
   }
   async function submit() {
     setError("");
-    if (!lat.trim() || !lng.trim()) {
-      setError("Use your GPS location or enter both coordinates.");
+    if (!!lat.trim() !== !!lng.trim()) {
+      setError("Enter both coordinates, or clear both to report without GPS.");
       return;
     }
     setWorking(true);
     try {
       const id = await app.submit({
         ...draft,
-        latitude: Number(lat),
-        longitude: Number(lng),
+        latitude: lat.trim() ? Number(lat) : undefined,
+        longitude: lng.trim() ? Number(lng) : undefined,
       });
       nav.replace({ pathname: "/Confirmation", params: { id } });
     } catch (e) {
@@ -267,10 +268,11 @@ export function ReportWizardScreen() {
       {step === 4 && (
         <>
           <Button
-            title="Use My Current Location"
+            title="Use My Current Location (Optional)"
             secondary
             onPress={gps}
-            busy={working}
+            busy={locating}
+            disabled={working || app.busy}
           />
           <LocationMap
             latitude={
@@ -291,8 +293,20 @@ export function ReportWizardScreen() {
             }}
           />
           <Hint>
-            Tap the map or drag the pin to confirm the exact location.
+            GPS is optional. Enter an address or landmark below. You can also
+            select a map location or enter coordinates.
           </Hint>
+          {(lat || lng) && (
+            <Button
+              title="Clear Coordinates"
+              secondary
+              onPress={() => {
+                setLat("");
+                setLng("");
+                patch({ latitude: undefined, longitude: undefined });
+              }}
+            />
+          )}
           <Field
             label="Address / Landmark"
             value={draft.address}
@@ -302,7 +316,7 @@ export function ReportWizardScreen() {
           <View style={{ flexDirection: "row", gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Field
-                label="Latitude"
+                label="Latitude (Optional)"
                 value={lat}
                 onChangeText={setLat}
                 keyboardType="numbers-and-punctuation"
@@ -310,7 +324,7 @@ export function ReportWizardScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Field
-                label="Longitude"
+                label="Longitude (Optional)"
                 value={lng}
                 onChangeText={setLng}
                 keyboardType="numbers-and-punctuation"
@@ -338,10 +352,10 @@ export function ReportWizardScreen() {
       )}
       <ErrorText message={error} />
       <Button
-        title={step === 4 ? "Confirm Location & Submit" : "Next"}
+        title={step === 4 ? "Submit Report" : "Next"}
         onPress={step === 4 ? submit : next}
         disabled={working}
-        busy={app.busy}
+        busy={step === 4 && working}
       />
       {step > 0 && (
         <Button

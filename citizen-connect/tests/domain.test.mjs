@@ -105,3 +105,86 @@ test("FR5/NFR3: citizens only see their reports; GN only sees their division", (
     2,
   );
 });
+
+import { sameRecord } from "../utils/records.ts";
+test("Cloud conflict checks ignore field order but detect changed history and assignment", () => {
+  const before = {
+    id: "a",
+    status: "Assigned",
+    assignedOfficerId: "officer-a",
+    history: [{ status: "Submitted", at: "2026-10-05" }],
+  };
+  assert.equal(
+    sameRecord(before, {
+      history: before.history,
+      assignedOfficerId: "officer-a",
+      status: "Assigned",
+      id: "a",
+    }),
+    true,
+  );
+  assert.equal(
+    sameRecord(before, { ...before, assignedOfficerId: "officer-b" }),
+    false,
+  );
+  assert.equal(
+    sameRecord(before, {
+      ...before,
+      history: [...before.history, { status: "Assigned", at: "2026-10-06" }],
+    }),
+    false,
+  );
+});
+
+test("Reports without GPS retain address and ownership; incomplete coordinate pairs are rejected", () => {
+  const { latitude, longitude, ...withoutGPS } = draft;
+  const report = createComplaint(data, citizen, withoutGPS);
+  assert.equal(report.address, draft.address);
+  assert.equal(report.citizenId, citizen.id);
+  assert.equal(report.latitude, undefined);
+  assert.equal(report.longitude, undefined);
+  assert.throws(() => validateDraft({ ...withoutGPS, latitude }));
+  assert.throws(() => validateDraft({ ...withoutGPS, longitude }));
+  assert.doesNotThrow(() =>
+    validateDraft({ ...withoutGPS, latitude: 0, longitude: 0 }),
+  );
+});
+
+import { createPendingWrite } from "../utils/pendingWrite.ts";
+test("Stalled writes time out without permitting a duplicate before acknowledgement", async () => {
+  const save = createPendingWrite(10);
+  let acknowledge;
+  let writes = 0;
+  await assert.rejects(
+    save(() => {
+      writes++;
+      return new Promise((resolve) => {
+        acknowledge = resolve;
+      });
+    }),
+    /result is unconfirmed/,
+  );
+  await assert.rejects(
+    save(async () => {
+      writes++;
+    }),
+    /previous save/,
+  );
+  assert.equal(writes, 1);
+  acknowledge();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await save(async () => {
+    writes++;
+  });
+  assert.equal(writes, 2);
+});
+test("Rejected writes propagate the error and allow corrected retries", async () => {
+  const save = createPendingWrite(100);
+  await assert.rejects(
+    save(async () => {
+      throw new Error("permission-denied");
+    }),
+    /permission-denied/,
+  );
+  await save(async () => {});
+});

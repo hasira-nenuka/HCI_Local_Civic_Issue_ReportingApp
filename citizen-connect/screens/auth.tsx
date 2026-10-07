@@ -24,9 +24,11 @@ export function LoginScreen() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
   const [role, setRole] = useState<Role>("citizen");
   async function login(demo = false) {
     setError("");
+    setMessage("");
     setBusy(true);
     try {
       if (demo) await app.demoLogin(role);
@@ -42,7 +44,7 @@ export function LoginScreen() {
       <View style={{ paddingTop: 45, alignItems: "center", marginBottom: 30 }}>
         <Ionicons name="business-outline" size={54} color={theme.blue} />
         <Text style={{ ...s.title, marginTop: 17 }}>Login</Text>
-        <Hint>Welcome to Citizen Connect</Hint>
+        <Hint>Citizen, officer and administrator sign-in</Hint>
       </View>
       <Field
         label="Email"
@@ -65,9 +67,38 @@ export function LoginScreen() {
         <Hint>{show ? "Hide password" : "Show password"}</Hint>
       </Pressable>
       <ErrorText message={error} />
+      {message ? <Hint>{message}</Hint> : null}
+      {app.cloud && (
+        <Button
+          title="Forgot password?"
+          secondary
+          busy={busy}
+          onPress={async () => {
+            setError("");
+            setMessage("");
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+              setError("Enter your email address first.");
+              return;
+            }
+            setBusy(true);
+            try {
+              await app.resetPassword(email);
+              setMessage(
+                "If an account exists, check your inbox for a password reset email.",
+              );
+            } catch {
+              setError(
+                "Could not send the reset email. Check your connection and try again.",
+              );
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      )}
       <Button title="Login" onPress={() => login()} busy={busy} />
       <Button
-        title="Sign Up"
+        title="Citizen Sign Up"
         secondary
         onPress={() => nav.navigate("/Register")}
       />
@@ -123,7 +154,7 @@ export function RegisterScreen() {
   return (
     <Screen>
       <Title>Create Account</Title>
-      <Hint>Join to report issues in your community.</Hint>
+      <Hint>Create a citizen account to report issues in your community.</Hint>
       <View style={{ height: 18 }} />
       <Field
         label="Full Name"

@@ -11,12 +11,13 @@ const config = {
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };
-export const firebaseEnabled = process.env.EXPO_PUBLIC_BACKEND === "firebase";
+// Demo must be explicitly selected; missing config must never bypass login.
+export const firebaseEnabled = process.env.EXPO_PUBLIC_BACKEND !== "demo";
+export const firebaseConfigured = Object.values(config).every(
+  (value) => !!value && !value.includes("replace-me"),
+);
 export function firebase() {
-  if (
-    !firebaseEnabled ||
-    Object.values(config).some((v) => !v || v.includes("replace-me"))
-  )
+  if (!firebaseEnabled || !firebaseConfigured)
     throw new Error(
       "Complete all Firebase settings in .env and restart Expo. See docs/firebase-setup.md.",
     );

@@ -68,3 +68,11 @@ Actual exported-app screenshots are in [screenshots](screenshots/README.md). The
 - OS push notifications and cross-council officer tenancy are not implemented.
 
 Use actual findings in the final report and distinguish passed automated checks from pending device/usability/cloud work.
+
+## Real authentication preparation - 5 October 2026
+
+Default backend changed to Firebase; missing config shows a setup screen. Added password reset email flow, transaction conflict detection for existing records, stale auth observer protection, and status history preservation checks in rules. Live snapshots are authoritative after cloud writes.
+
+Verified: TypeScript, lint, seven domain tests, five existing browser workflows against an explicit demo export, and default Firebase-mode web compilation. `node tests/setup-check.cjs` verifies the unconfigured setup screen blocks demo sign-in.
+
+Pending: Firebase provisioning, deployed/emulator rules tests, real sign-up/wrong-password/reset email, photo uploads, and updates/conflicts between two devices. No live Firebase verification is claimed. Remaining cloud limits are listed in the Firebase setup guide.
