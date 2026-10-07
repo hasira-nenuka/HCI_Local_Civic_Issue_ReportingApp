@@ -23,7 +23,7 @@ import {
   uid,
 } from "../utils/complaints";
 import { theme } from "../constants/theme";
-import { firebaseEnabled } from "../services/firebase";
+import { firebaseEnabled, firebaseConfigured } from "../services/firebase";
 import { cloudStore, emptyData } from "../services/cloudStore";
 type Context = {
   data: AppData;
@@ -31,6 +31,7 @@ type Context = {
   busy: boolean;
   cloud: boolean;
   login: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   demoLogin: (role: Role) => Promise<void>;
   register: (
     name: string,
@@ -77,6 +78,8 @@ export function AppProvider({ children }: React.PropsWithChildren) {
   const [error, setError] = useState("");
   const dataRef = useRef<AppData | null>(null);
   const lock = useRef(false);
+  const authGeneration = useRef(0);
+  const authAction = useRef(false);
   useEffect(() => {
     if (firebaseEnabled) {
       const initial = emptyData();
@@ -84,6 +87,9 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       setData(initial);
       try {
         return cloudStore.observeAuth(async (account) => {
+          const generation = ++authGeneration.current;
+          // Explicit login/signup loads the profile only after its own work completes.
+          if (authAction.current) return;
           if (!account) {
             setUser(null);
             const empty = emptyData();
@@ -93,17 +99,28 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           }
           try {
             const profile = await cloudStore.profile(account.uid);
-            if (!profile) return;
-            if (!profile.active) {
+            if (generation !== authGeneration.current) return;
+            if (!profile)
+              throw new Error(
+                "Your user profile is missing. Ask the administrator to create users/{your Authentication UID}.",
+              );
+            if (profile.active !== true) {
               await cloudStore.logout();
               return;
             }
             const loaded = await cloudStore.load(profile);
+            if (generation !== authGeneration.current) return;
             dataRef.current = loaded;
             setData(loaded);
             setUser(profile);
             setError("");
           } catch (e) {
+            if (generation !== authGeneration.current || authAction.current)
+              return;
+            setUser(null);
+            const empty = emptyData();
+            dataRef.current = empty;
+            setData(empty);
             setError(`Firebase: ${(e as Error).message}`);
           }
         });
@@ -153,13 +170,9 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       const next = change(before);
       if (firebaseEnabled) {
         await cloudStore.save(before, next);
-        const merged = { ...dataRef.current! };
-        for (const key of Object.keys(next) as (keyof AppData)[]) {
-          if (JSON.stringify(before[key]) !== JSON.stringify(next[key]))
-            Object.assign(merged, { [key]: next[key] });
-        }
-        dataRef.current = merged;
-        setData(merged);
+        // Firestore listeners are authoritative; replacing whole arrays here
+        // can hide records that another device added during this operation.
+        setError("");
       } else {
         await localStore.save(next);
         dataRef.current = next;
@@ -200,12 +213,32 @@ export function AppProvider({ children }: React.PropsWithChildren) {
             throw new Error(
               "Firebase is not configured yet. Use a demo account below.",
             );
-          const profile = await cloudStore.login(email, password);
-          const loaded = await cloudStore.load(profile);
-          dataRef.current = loaded;
-          setData(loaded);
-          setUser(profile);
+          if (authAction.current)
+            throw new Error("Please wait for sign-in to finish.");
+          authAction.current = true;
+          ++authGeneration.current;
           setError("");
+          try {
+            const profile = await cloudStore.login(email, password);
+            const loaded = await cloudStore.load(profile);
+            dataRef.current = loaded;
+            setData(loaded);
+            setUser(profile);
+          } catch (e) {
+            await cloudStore.logout().catch(() => undefined);
+            setUser(null);
+            const empty = emptyData();
+            dataRef.current = empty;
+            setData(empty);
+            throw e;
+          } finally {
+            authAction.current = false;
+          }
+        },
+        async resetPassword(email) {
+          if (!firebaseEnabled)
+            throw new Error("Password reset requires Firebase.");
+          await cloudStore.resetPassword(email);
         },
         async demoLogin(role) {
           if (firebaseEnabled)
@@ -214,17 +247,38 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         },
         async register(name, email, phone, password) {
           if (firebaseEnabled) {
-            const profile = await cloudStore.register(
-              name,
-              email,
-              phone,
-              password,
-            );
-            const loaded = await cloudStore.load(profile);
-            dataRef.current = loaded;
-            setData(loaded);
-            setUser(profile);
+            if (authAction.current)
+              throw new Error("Please wait for sign-in to finish.");
+            authAction.current = true;
+            ++authGeneration.current;
             setError("");
+            let profileCreated = false;
+            try {
+              const profile = await cloudStore.register(
+                name,
+                email,
+                phone,
+                password,
+              );
+              profileCreated = true;
+              const loaded = await cloudStore.load(profile);
+              dataRef.current = loaded;
+              setData(loaded);
+              setUser(profile);
+            } catch (e) {
+              await cloudStore.logout().catch(() => undefined);
+              setUser(null);
+              const empty = emptyData();
+              dataRef.current = empty;
+              setData(empty);
+              if (profileCreated)
+                throw new Error(
+                  `Your account and profile were created, but app data could not load. Use Login after fixing access; do not sign up again. ${(e as Error).message}`,
+                );
+              throw e;
+            } finally {
+              authAction.current = false;
+            }
             return;
           }
           const next = await localStore.register(
@@ -510,6 +564,31 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         },
       }
     : null;
+  if (firebaseEnabled && !firebaseConfigured)
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          padding: 28,
+          backgroundColor: theme.bg,
+        }}
+      >
+        <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 16 }}>
+          Connect Firebase
+        </Text>
+        <Text>
+          Citizen Connect now requires real authentication. Create your Firebase
+          project, enable Email/Password sign-in, and publish the supplied
+          database rules.
+        </Text>
+        <Text style={{ marginTop: 16 }}>
+          Copy citizen-connect/.env.example to .env, enter your Firebase web app
+          configuration, then restart Expo with --clear. Follow
+          docs/firebase-setup.md.
+        </Text>
+      </View>
+    );
   if (!value)
     return (
       <View

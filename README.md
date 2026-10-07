@@ -18,9 +18,9 @@ Scan the Expo QR code with an SDK-compatible Expo Go installation. For an Androi
 
 ## Demo and Firebase
 
-With no `.env`, the app uses a labelled local demo with fictional sample records. On Login select citizen, officer, gn or admin, then press **Continue as …**. No demo password is needed. Reports, assignments, notifications, profiles and administration changes persist on that device/browser. Switch roles by logging out through Profile (officers: Settings → My Profile). A local demo profile is also available through Sign Up.
+Real Firebase authentication is now the default. With no `.env`, the app displays a Firebase setup screen. Follow [Firebase setup](docs/firebase-setup.md) before signing in. For isolated demo testing only, explicitly set `EXPO_PUBLIC_BACKEND=demo`; this uses fictional sample records. On Login select citizen, officer, gn or admin, then press **Continue as …**. No demo password is needed. Reports, assignments, notifications, profiles and administration changes persist on that device/browser. Switch roles by logging out through Profile (officers: Settings → My Profile). A local demo profile is also available through Sign Up.
 
-Demo mode is for evaluation, not secure multi-user deployment. Firebase mode uses real email/password authentication, Firestore collections and Storage. Follow [Firebase setup](docs/firebase-setup.md), copy `citizen-connect/.env.example` to `.env`, fill your project configuration, set `EXPO_PUBLIC_BACKEND=firebase`, and restart Expo. Cloud mode does not import demo records or permit demo logins. Firebase configuration and external deployment have not been completed because no project was supplied.
+Demo mode is for evaluation, not secure multi-user deployment. Firebase mode uses real email/password authentication, Firestore collections and Storage. Follow [Firebase setup](docs/firebase-setup.md), copy `citizen-connect/.env.example` to `.env`, fill your project configuration, set `EXPO_PUBLIC_BACKEND=firebase`, and restart Expo. Cloud mode does not import demo records or permit demo logins. Firebase configuration and external deployment have not been completed because no project was supplied. Cloud updates use transactions to reject stale edits and live listeners to refresh data across devices. The login screen includes password reset by email.
 
 ## Features
 
@@ -45,6 +45,8 @@ npm.cmd run export:web
 npm.cmd run test:e2e
 npm.cmd run export:android
 ```
+
+Browser workflow tests exercise the explicit demo export. Before running them, use `$env:EXPO_PUBLIC_BACKEND="demo"; npm.cmd run export:web` in PowerShell; then remove that temporary variable with `Remove-Item Env:EXPO_PUBLIC_BACKEND`. Real Firebase acceptance checks are listed in the setup guide.
 
 An Android JavaScript export is a compilation check, not an APK. `eas.json` includes an APK preview profile. When you have an Expo account and Android build setup, run `npx.cmd eas-cli build --platform android --profile preview`. This uses an external build service; no APK has been generated in this workspace.
 

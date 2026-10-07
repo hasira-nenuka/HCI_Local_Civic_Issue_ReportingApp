@@ -39,8 +39,8 @@ export interface Complaint {
   localAuthority: string;
   division: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   imageUrl?: string;
   priority: Priority;
   status: Status;

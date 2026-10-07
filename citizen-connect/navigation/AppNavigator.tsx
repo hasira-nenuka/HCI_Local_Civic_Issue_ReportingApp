@@ -1,43 +1,27 @@
-import React, { useEffect, useState } from "react";
-import { Text, View } from "react-native";
+import React, { useState } from "react";
+import { Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import { useApp } from "../hooks/AppContext";
 import { theme } from "../constants/theme";
 export default function AppNavigator() {
   const { user } = useApp();
   const [splash, setSplash] = useState(true);
-  useEffect(() => {
-    const timer = setTimeout(() => setSplash(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
   if (splash)
     return (
-      <View
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open Citizen Connect"
+        onPress={() => setSplash(false)}
         style={{
           flex: 1,
-          backgroundColor: "#dce3ed",
+          backgroundColor: theme.bg,
           justifyContent: "center",
           alignItems: "center",
-          gap: 12,
         }}
       >
-        <Text style={{ fontSize: 95 }}>🏛️</Text>
-        <Text
-          style={{
-            fontSize: 24,
-            fontWeight: "700",
-            color: "#1c3552",
-            textAlign: "center",
-            lineHeight: 36,
-          }}
-        >
-          Local Civic Issue{"\n"}Reporting System
-        </Text>
-        <Text style={{ fontSize: 12, color: theme.muted }}>
-          Citizen & Administration Portal
-        </Text>
-        <Text style={{ color: theme.blue, fontSize: 23 }}>•••</Text>
-      </View>
+        <Ionicons name="business-outline" size={110} color={theme.blue} />
+      </Pressable>
     );
   return (
     <Stack

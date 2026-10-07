@@ -11,7 +11,7 @@ const types = {
   ".ttf": "font/ttf",
   ".json": "application/json",
 };
-http
+const server = http
   .createServer((req, res) => {
     let filename;
     try {
@@ -38,3 +38,5 @@ http
     fs.createReadStream(filename).pipe(res);
   })
   .listen(4173, "127.0.0.1");
+
+module.exports = server;

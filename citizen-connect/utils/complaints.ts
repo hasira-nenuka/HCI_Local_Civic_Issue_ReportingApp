@@ -22,7 +22,10 @@ export function validateDraft(draft: ComplaintDraft) {
   if (!draft.division.trim()) throw new Error("Add a GN division.");
   if (draft.description.length > 2000)
     throw new Error("Keep the description within 2000 characters.");
+  if (draft.latitude === undefined && draft.longitude === undefined) return;
   if (
+    typeof draft.latitude !== "number" ||
+    typeof draft.longitude !== "number" ||
     !Number.isFinite(draft.latitude) ||
     !Number.isFinite(draft.longitude) ||
     Math.abs(draft.latitude) > 90 ||
