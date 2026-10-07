@@ -1,28 +1,12 @@
 import React, { useState } from "react";
-import { Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import { useApp } from "../hooks/AppContext";
+import WelcomeScreen from "../components/WelcomeScreen";
 import { theme } from "../constants/theme";
 export default function AppNavigator() {
   const { user } = useApp();
   const [splash, setSplash] = useState(true);
-  if (splash)
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open Citizen Connect"
-        onPress={() => setSplash(false)}
-        style={{
-          flex: 1,
-          backgroundColor: theme.bg,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Ionicons name="business-outline" size={110} color={theme.blue} />
-      </Pressable>
-    );
+  if (splash) return <WelcomeScreen onContinue={() => setSplash(false)} />;
   return (
     <Stack
       screenOptions={{

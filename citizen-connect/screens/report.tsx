@@ -13,6 +13,7 @@ import {
   Search,
   s,
 } from "../components/ui";
+import { VisualIcon } from "../components/Artwork";
 import LocationMap from "../components/LocationMap";
 import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
@@ -225,7 +226,7 @@ export function ReportWizardScreen() {
                 backgroundColor: "#edf3fa",
               }}
             >
-              <Text style={{ fontSize: 35 }}>📷</Text>
+              <VisualIcon symbol="📷" size={35} />
               <Hint>Add a clear photo of the issue</Hint>
             </Card>
           )}

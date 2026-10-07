@@ -20,6 +20,7 @@ import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
 import { Complaint } from "../types/models";
 import { dateLabel, visibleComplaints, canManage } from "../utils/complaints";
+import { CommunityArtwork, VisualIcon } from "../components/Artwork";
 import { theme } from "../constants/theme";
 export function ComplaintCard({
   complaint,
@@ -31,6 +32,7 @@ export function ComplaintCard({
   return (
     <Card onPress={onPress}>
       <View style={s.between}>
+        <VisualIcon symbol={complaint.categoryId} size={24} />
         <View style={{ flex: 1 }}>
           <Text style={s.bold}>{complaint.category}</Text>
           <Hint>
@@ -49,8 +51,27 @@ export function HomeScreen() {
   const nav = useRouter();
   return (
     <Screen>
-      <Title>Hello, {user!.name.split(" ")[0]} 👋</Title>
+      <Title>Hello, {user!.name.split(" ")[0]}</Title>
       <Hint>Together for a cleaner & safer community.</Hint>
+      <View
+        style={{
+          flexDirection: "row",
+          backgroundColor: "#eaf2ff",
+          borderRadius: 24,
+          padding: 16,
+          alignItems: "center",
+          gap: 12,
+          marginTop: 12,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={{ ...s.bold, fontSize: 18 }}>
+            Make your neighborhood better
+          </Text>
+          <Hint>Your voice helps the right people take action.</Hint>
+        </View>
+        <CommunityArtwork size={112} />
+      </View>
       <Card
         onPress={() => nav.navigate("/Category")}
         style={{
@@ -61,7 +82,7 @@ export function HomeScreen() {
         }}
       >
         <View style={s.between}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={{ ...s.bold, color: "white", fontSize: 18 }}>
               Report an Issue
             </Text>
@@ -104,7 +125,7 @@ export function HomeScreen() {
               })
             }
           >
-            <Text style={{ fontSize: 34 }}>{c.icon}</Text>
+            <VisualIcon symbol={c.id} size={34} />
             <Text
               style={{
                 fontSize: 10,
@@ -148,18 +169,18 @@ export function CategoryScreen() {
               })
             }
             style={{
-              width: "30%",
-              minHeight: 117,
+              width: "47%",
+              minHeight: 145,
               backgroundColor: "white",
               borderWidth: 1,
               borderColor: theme.border,
-              borderRadius: 14,
+              borderRadius: 20,
               alignItems: "center",
               justifyContent: "center",
               padding: 8,
             }}
           >
-            <Text style={{ fontSize: 39, marginBottom: 10 }}>{c.icon}</Text>
+            <VisualIcon symbol={c.id} size={39} />
             <Text
               style={{
                 fontSize: 11,
@@ -190,11 +211,11 @@ export function CategoryInfoScreen() {
   return (
     <Screen>
       <View style={{ alignItems: "center", marginTop: 30, marginBottom: 22 }}>
-        <Text style={{ fontSize: 80 }}>{c.icon}</Text>
+        <VisualIcon symbol={c.id} size={70} />
         <Title>{c.name}</Title>
       </View>
       <Hint>{c.description}</Hint>
-      <Card style={{ backgroundColor: "#eaf2ff", marginTop: 65 }}>
+      <Card style={{ backgroundColor: "#eaf2ff", marginTop: 28 }}>
         <Text style={{ ...s.bold, color: theme.blue }}>Tip</Text>
         <Hint>
           Add a clear photo and confirm the exact location for faster
@@ -248,7 +269,11 @@ export function ReportsScreen() {
         />
       ))}
       {!complaints.length && (
-        <Card>
+        <Card style={{ alignItems: "center", paddingVertical: 24 }}>
+          <CommunityArtwork size={140} />
+          <Text style={{ ...s.bold, marginTop: 16 }}>
+            Your community journey starts here
+          </Text>
           <Hint>No reports match your search.</Hint>
         </Card>
       )}
@@ -263,7 +288,7 @@ export function ConfirmationScreen() {
   return (
     <Screen>
       <View style={{ alignItems: "center", marginTop: 45, marginBottom: 28 }}>
-        <Text style={{ fontSize: 65, marginBottom: 18 }}>🎉</Text>
+        <CommunityArtwork variant="submitted" size={190} animated />
         <Title>Report Submitted!</Title>
         <Hint>Your complaint has been successfully submitted.</Hint>
       </View>

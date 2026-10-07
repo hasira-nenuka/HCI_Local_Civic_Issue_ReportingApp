@@ -14,6 +14,7 @@ import {
 } from "../components/ui";
 import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
+import { VisualIcon } from "../components/Artwork";
 import { dateLabel } from "../utils/complaints";
 import { pickPhoto } from "../services/media";
 export function ProfileScreen() {
@@ -29,7 +30,7 @@ export function ProfileScreen() {
             style={{ width: 70, height: 70, borderRadius: 35 }}
           />
         ) : (
-          <Text style={{ fontSize: 52 }}>👤</Text>
+          <VisualIcon symbol="👤" size={52} />
         )}
         <View>
           <Title>{app.user!.name}</Title>
@@ -90,7 +91,7 @@ export function EditProfileScreen() {
             style={{ width: 85, height: 85, borderRadius: 45 }}
           />
         ) : (
-          <Text style={{ fontSize: 60 }}>👤</Text>
+          <VisualIcon symbol="👤" size={60} />
         )}
         <Button
           title="Change Photo"
@@ -228,7 +229,7 @@ export function AboutScreen() {
   return (
     <Screen>
       <View style={{ alignItems: "center", marginVertical: 30 }}>
-        <Text style={{ fontSize: 64 }}>🏛️</Text>
+        <VisualIcon symbol="🏛️" size={64} />
         <Title>Citizen Connect</Title>
         <Hint>Local Civic-Issue Reporting System · Version 1.0</Hint>
       </View>
@@ -307,7 +308,7 @@ export function NotificationDetailScreen() {
   return (
     <Screen>
       <View style={{ alignItems: "center", marginTop: 20, marginBottom: 30 }}>
-        <Text style={{ fontSize: 60 }}>🔔</Text>
+        <VisualIcon symbol="🔔" size={60} />
         <Title>{n.title}</Title>
       </View>
       <Card>
