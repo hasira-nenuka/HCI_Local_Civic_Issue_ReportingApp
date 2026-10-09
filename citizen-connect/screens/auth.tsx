@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { CommunityArtwork } from "../components/Artwork";
 import {
   Button,
   Card,
@@ -15,7 +15,6 @@ import {
 } from "../components/ui";
 import { useApp } from "../hooks/AppContext";
 import { Role } from "../types/models";
-import { theme } from "../constants/theme";
 export function LoginScreen() {
   const app = useApp();
   const nav = useRouter();
@@ -41,8 +40,8 @@ export function LoginScreen() {
   }
   return (
     <Screen>
-      <View style={{ paddingTop: 45, alignItems: "center", marginBottom: 30 }}>
-        <Ionicons name="business-outline" size={54} color={theme.blue} />
+      <View style={{ paddingTop: 12, alignItems: "center", marginBottom: 30 }}>
+        <CommunityArtwork size={150} />
         <Text style={{ ...s.title, marginTop: 17 }}>Login</Text>
         <Hint>Citizen, officer and administrator sign-in</Hint>
       </View>

@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { VisualIcon } from "./Artwork";
 import { theme } from "../constants/theme";
 import { Status } from "../types/models";
 export function Screen({ children }: React.PropsWithChildren) {
@@ -38,7 +39,7 @@ export function Card({
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[s.card, style]}
+      style={({ pressed }) => [s.card, style, pressed && { opacity: 0.82 }]}
     >
       {children}
     </Pressable>
@@ -145,7 +146,10 @@ export function Radio({
       accessibilityLabel={label}
       accessibilityState={{ checked: selected }}
       onPress={onPress}
-      style={s.radio}
+      style={[
+        s.radio,
+        selected && { backgroundColor: "#eaf2ff", borderColor: theme.blue },
+      ]}
     >
       <Ionicons
         name={selected ? "radio-button-on" : "radio-button-off"}
@@ -236,7 +240,7 @@ export function Row({
     <Card onPress={onPress}>
       <View style={s.between}>
         <View style={s.inline}>
-          {icon && <Text style={{ fontSize: 26 }}>{icon}</Text>}
+          {icon && <VisualIcon symbol={icon} />}
           <View style={{ flexShrink: 1 }}>
             <Text style={s.bold}>{title}</Text>
             {subtitle && <Hint>{subtitle}</Hint>}
@@ -271,21 +275,21 @@ export const s = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: theme.border,
-    borderRadius: 14,
+    borderRadius: 20,
     backgroundColor: "white",
     padding: 17,
     marginBottom: 12,
   },
   button: {
     backgroundColor: theme.blue,
-    minHeight: 46,
-    borderRadius: 9,
+    minHeight: 50,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     padding: 12,
     marginVertical: 7,
   },
-  buttonText: { color: "white", fontWeight: "700", fontSize: 13 },
+  buttonText: { color: "white", fontWeight: "700", fontSize: 14 },
   secondary: { backgroundColor: "#eaf2ff" },
   danger: { backgroundColor: "#fceef0" },
   label: { fontSize: 12, fontWeight: "600", color: theme.ink, marginBottom: 8 },
@@ -293,7 +297,7 @@ export const s = StyleSheet.create({
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: theme.border,
-    borderRadius: 9,
+    borderRadius: 13,
     paddingHorizontal: 13,
     paddingVertical: 12,
     fontSize: 13,
@@ -307,7 +311,7 @@ export const s = StyleSheet.create({
     backgroundColor: "white",
     borderWidth: 1,
     borderColor: theme.border,
-    borderRadius: 9,
+    borderRadius: 13,
     paddingHorizontal: 12,
     marginBottom: 15,
   },

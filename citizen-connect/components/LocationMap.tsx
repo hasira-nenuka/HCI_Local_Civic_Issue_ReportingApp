@@ -1,5 +1,6 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { VisualIcon } from "./Artwork";
 import { Hint } from "./ui";
 export default function LocationMap({
   latitude,
@@ -20,7 +21,7 @@ export default function LocationMap({
         justifyContent: "center",
       }}
     >
-      <Text style={{ fontSize: 40 }}>📍</Text>
+      <VisualIcon symbol="📌" size={40} />
       <Hint>
         {latitude.toFixed(5)}, {longitude.toFixed(5)}
       </Hint>

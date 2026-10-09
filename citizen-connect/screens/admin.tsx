@@ -20,6 +20,7 @@ import { RootParams } from "../navigation/types";
 import { Category, Contact, Priority, Role, User } from "../types/models";
 import { uid, visibleComplaints } from "../utils/complaints";
 import { ComplaintCard } from "./citizen";
+import { VisualIcon } from "../components/Artwork";
 import { theme } from "../constants/theme";
 export function DashboardScreen() {
   const app = useApp();
@@ -29,7 +30,7 @@ export function DashboardScreen() {
     <Screen>
       <Title>
         Hello,{" "}
-        {app.user!.role === "admin" ? "Admin" : app.user!.name.split(" ")[0]} 👋
+        {app.user!.role === "admin" ? "Admin" : app.user!.name.split(" ")[0]}
       </Title>
       <Hint>
         {app.user!.role === "gn"
@@ -62,8 +63,8 @@ export function DashboardScreen() {
         ].map(([label, count, icon]) => (
           <Card key={label} style={{ width: "48%", marginBottom: 0 }}>
             <View style={s.inline}>
-              <Text style={{ fontSize: 26 }}>{icon}</Text>
-              <View>
+              <VisualIcon symbol={String(icon)} size={24} />
+              <View style={{ flex: 1 }}>
                 <Text
                   style={{ fontSize: 24, color: theme.blue, fontWeight: "700" }}
                 >
@@ -385,7 +386,7 @@ export function UsersScreen() {
           <View style={s.between}>
             <View style={s.inline}>
               <Text style={{ fontSize: 29 }}>👤</Text>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={s.bold}>{u.name}</Text>
                 <Hint>
                   {u.role === "gn"
