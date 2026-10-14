@@ -22,7 +22,7 @@ import {
   transitionComplaint,
   uid,
 } from "../utils/complaints";
-import { theme } from "../constants/theme";
+import { useTheme } from "../hooks/AppearanceContext";
 import { firebaseEnabled, firebaseConfigured } from "../services/firebase";
 import { cloudStore, emptyData } from "../services/cloudStore";
 type Context = {
@@ -72,9 +72,11 @@ export const useApp = () => {
   return context;
 };
 export function AppProvider({ children }: React.PropsWithChildren) {
+  const theme = useTheme();
   const [data, setData] = useState<AppData | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [busy, setBusy] = useState(false);
+  const [authReady, setAuthReady] = useState(!firebaseEnabled);
   const [error, setError] = useState("");
   const dataRef = useRef<AppData | null>(null);
   const lock = useRef(false);
@@ -85,12 +87,30 @@ export function AppProvider({ children }: React.PropsWithChildren) {
       const initial = emptyData();
       dataRef.current = initial;
       setData(initial);
+      let firstAuthEvent = true;
       try {
         return cloudStore.observeAuth(async (account) => {
           const generation = ++authGeneration.current;
+          const restoredSession = firstAuthEvent;
+          firstAuthEvent = false;
           // Explicit login/signup loads the profile only after its own work completes.
           if (authAction.current) return;
+          // Opening the app requires credentials, even if Firebase saved a session.
+          // Never publish the restored profile: that would briefly unlock Main.
+          if (restoredSession && account) {
+            try {
+              await cloudStore.logout();
+            } catch {
+              setError(
+                "Could not clear the previous sign-in. Please try logging in again.",
+              );
+            } finally {
+              setAuthReady(true);
+            }
+            return;
+          }
           if (!account) {
+            setAuthReady(true);
             setUser(null);
             const empty = emptyData();
             dataRef.current = empty;
@@ -125,6 +145,7 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           }
         });
       } catch (e) {
+        setAuthReady(true);
         setError((e as Error).message);
       }
       return;
@@ -134,8 +155,8 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         const loaded = await localStore.load();
         dataRef.current = loaded;
         setData(loaded);
-        const id = await localStore.session();
-        setUser(loaded.users.find((u) => u.id === id && u.active) || null);
+        await localStore.setSession(null);
+        setUser(null);
       } catch {
         setError("Could not load saved data. Restart the app and try again.");
       }
@@ -574,22 +595,29 @@ export function AppProvider({ children }: React.PropsWithChildren) {
           backgroundColor: theme.bg,
         }}
       >
-        <Text style={{ fontSize: 24, fontWeight: "700", marginBottom: 16 }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: "700",
+            marginBottom: 16,
+            color: theme.ink,
+          }}
+        >
           Connect Firebase
         </Text>
-        <Text>
+        <Text style={{ color: theme.ink, lineHeight: 20 }}>
           Citizen Connect now requires real authentication. Create your Firebase
           project, enable Email/Password sign-in, and publish the supplied
           database rules.
         </Text>
-        <Text style={{ marginTop: 16 }}>
+        <Text style={{ marginTop: 16, color: theme.ink, lineHeight: 20 }}>
           Copy citizen-connect/.env.example to .env, enter your Firebase web app
           configuration, then restart Expo with --clear. Follow
           docs/firebase-setup.md.
         </Text>
       </View>
     );
-  if (!value)
+  if (!value || !authReady)
     return (
       <View
         style={{
@@ -600,13 +628,15 @@ export function AppProvider({ children }: React.PropsWithChildren) {
         }}
       >
         <ActivityIndicator color={theme.blue} />
-        <Text>{error || "Opening Citizen Connect…"}</Text>
+        <Text style={{ color: theme.ink }}>
+          {error || "Opening Citizen Connect…"}
+        </Text>
       </View>
     );
   return (
     <AppContext.Provider value={value}>
       {error ? (
-        <View style={{ padding: 16, backgroundColor: "#feedef" }}>
+        <View style={{ padding: 16, backgroundColor: theme.softRed }}>
           <Text accessibilityRole="alert" style={{ color: theme.red }}>
             {error}
           </Text>

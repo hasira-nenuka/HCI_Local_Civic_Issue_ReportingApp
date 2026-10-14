@@ -1,7 +1,9 @@
+import { useTheme } from "../hooks/AppearanceContext";
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { CommunityArtwork } from "../components/Artwork";
+import { CitizenHero } from "../components/CitizenDesign";
 import {
   Button,
   Card,
@@ -10,12 +12,13 @@ import {
   Field,
   Hint,
   Screen,
-  Title,
-  s,
+  useUIStyles,
 } from "../components/ui";
 import { useApp } from "../hooks/AppContext";
 import { Role } from "../types/models";
 export function LoginScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const app = useApp();
   const nav = useRouter();
   const [email, setEmail] = useState("");
@@ -102,7 +105,7 @@ export function LoginScreen() {
         onPress={() => nav.navigate("/Register")}
       />
       {!app.cloud && (
-        <Card style={{ marginTop: 22, backgroundColor: "#eaf2ff" }}>
+        <Card style={{ marginTop: 22, backgroundColor: theme.softBlue }}>
           <Text style={s.bold}>Explore the local demo</Text>
           <Hint>
             Sample data is saved on this device. Firebase is not connected yet.
@@ -152,8 +155,11 @@ export function RegisterScreen() {
   }
   return (
     <Screen>
-      <Title>Create Account</Title>
-      <Hint>Create a citizen account to report issues in your community.</Hint>
+      <CitizenHero
+        title="A better community starts with you"
+        subtitle="Create your citizen account to report issues and follow the progress."
+        eyebrow="CREATE ACCOUNT"
+      />
       <View style={{ height: 18 }} />
       <Field
         label="Full Name"

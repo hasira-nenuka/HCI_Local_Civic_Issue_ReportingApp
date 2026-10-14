@@ -42,7 +42,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/domain.test.mjs",
+    "test": "node --experimental-strip-types --test tests/domain.test.mjs tests/notifications.test.mjs",
     "test:e2e": "playwright test",
     "export:web": "expo export --platform web",
     "export:android": "expo export --platform android --output-dir dist-android",

@@ -2,12 +2,13 @@ import React from "react";
 import { ScrollView, Text, View } from "react-native";
 import { CommunityArtwork } from "./Artwork";
 import { Button } from "./ui";
-import { theme } from "../constants/theme";
+import { useTheme } from "../hooks/AppearanceContext";
 export default function WelcomeScreen({
   onContinue,
 }: {
   onContinue: () => void;
 }) {
+  const theme = useTheme();
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.bg }}

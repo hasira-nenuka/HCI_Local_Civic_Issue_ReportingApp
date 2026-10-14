@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { Stack } from "expo-router";
 import { useApp } from "../hooks/AppContext";
 import WelcomeScreen from "../components/WelcomeScreen";
-import { theme } from "../constants/theme";
+import { useTheme } from "../hooks/AppearanceContext";
 export default function AppNavigator() {
+  const theme = useTheme();
   const { user } = useApp();
   const [splash, setSplash] = useState(true);
   if (splash) return <WelcomeScreen onContinue={() => setSplash(false)} />;

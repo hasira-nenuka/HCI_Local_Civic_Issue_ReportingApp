@@ -1,6 +1,7 @@
+import { useTheme } from "../hooks/AppearanceContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
-import { Linking, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import {
   Badge,
   Button,
@@ -9,77 +10,161 @@ import {
   ErrorText,
   Field,
   Hint,
-  Row,
   Screen,
   Search,
-  Title,
-  s,
+  useUIStyles,
 } from "../components/ui";
 import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
 import { Category, Contact, Priority, Role, User } from "../types/models";
 import { uid, visibleComplaints } from "../utils/complaints";
 import { ComplaintCard } from "./citizen";
-import { VisualIcon } from "../components/Artwork";
-import { theme } from "../constants/theme";
+import { CategoryArtwork } from "../components/Artwork";
+import {
+  AdminHero,
+  AdminLink,
+  AdminSection,
+  AdminStat,
+  StaffAvatar,
+  adminColors,
+  useAdminStyles,
+} from "../components/AdminDesign";
+import { categories as categoryPresets } from "../constants/catalog";
 export function DashboardScreen() {
+  const s = useUIStyles();
+  const a = useAdminStyles();
   const app = useApp();
   const nav = useRouter();
   const reports = visibleComplaints(app.data, app.user!);
+  const resolved = reports.filter((c) => c.status === "Resolved").length;
+  const recent = [...reports]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 3);
   return (
     <Screen>
-      <Title>
-        Hello,{" "}
-        {app.user!.role === "admin" ? "Admin" : app.user!.name.split(" ")[0]}
-      </Title>
-      <Hint>
-        {app.user!.role === "gn"
-          ? `Monitoring ${app.user!.division}`
-          : "Here's the latest overview."}
-      </Hint>
-      <View
-        style={{
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: 12,
-          marginTop: 16,
-        }}
-      >
-        {[
-          ["Total Complaints", reports.length, "📁"],
-          ["New", reports.filter((c) => c.status === "Submitted").length, "🟢"],
-          [
-            "In Progress",
+      <AdminHero
+        dark
+        eyebrow={
+          app.user!.role === "admin" ? "ADMIN WORKSPACE" : "OFFICER WORKSPACE"
+        }
+        title={`Hello, ${app.user!.name.split(" ")[0]}`}
+        subtitle={
+          app.user!.role === "gn"
+            ? `Your community overview for ${app.user!.division}.`
+            : "A clearer picture. A better community."
+        }
+      />
+      {reports.some((c) => c.sampleDataset) && (
+        <Hint>
+          Includes clearly labeled sample scenarios from a four-week activity
+          dataset.
+        </Hint>
+      )}
+      <View style={{ ...a.between, marginBottom: 12 }}>
+        <Text style={a.section}>At a glance</Text>
+        <Text style={a.caption}>Live complaint totals</Text>
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+        <AdminStat
+          label="Total complaints"
+          count={reports.length}
+          icon="file-tray-full-outline"
+          tone="blue"
+        />
+        <AdminStat
+          label="New submissions"
+          count={reports.filter((c) => c.status === "Submitted").length}
+          icon="sparkles-outline"
+          tone="amber"
+        />
+        <AdminStat
+          label="In progress"
+          count={
             reports.filter(
               (c) => c.status === "Assigned" || c.status === "In Progress",
-            ).length,
-            "📊",
-          ],
-          [
-            "Resolved",
-            reports.filter((c) => c.status === "Resolved").length,
-            "✅",
-          ],
-        ].map(([label, count, icon]) => (
-          <Card key={label} style={{ width: "48%", marginBottom: 0 }}>
-            <View style={s.inline}>
-              <VisualIcon symbol={String(icon)} size={24} />
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{ fontSize: 24, color: theme.blue, fontWeight: "700" }}
-                >
-                  {count}
-                </Text>
-                <Text style={{ fontSize: 10, color: theme.muted }}>
-                  {label}
-                </Text>
-              </View>
-            </View>
-          </Card>
-        ))}
+            ).length
+          }
+          icon="time-outline"
+          tone="violet"
+        />
+        <AdminStat
+          label="Resolved"
+          count={resolved}
+          icon="checkmark-done-outline"
+          tone="mint"
+        />
       </View>
-      <Text style={s.section}>Recent Complaints</Text>
-      {reports.slice(0, 3).map((c) => (
+      <Card
+        style={{
+          marginTop: 14,
+          backgroundColor: "#e5f6ef",
+          borderColor: "#c9e9da",
+        }}
+      >
+        <View style={a.between}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...s.bold, color: "#146c54" }}>Resolution rate</Text>
+            <Text
+              style={{
+                color: "#28644f",
+                fontSize: 12,
+                lineHeight: 19,
+                marginTop: 4,
+              }}
+            >
+              {resolved} of {reports.length} complaints resolved
+            </Text>
+          </View>
+          <Text style={{ fontSize: 28, color: "#146c54", fontWeight: "800" }}>
+            {reports.length ? Math.round((resolved / reports.length) * 100) : 0}
+            %
+          </Text>
+        </View>
+        <View
+          style={{
+            height: 7,
+            borderRadius: 5,
+            backgroundColor: "#cce9db",
+            overflow: "hidden",
+            marginTop: 8,
+          }}
+        >
+          <View
+            style={{
+              height: "100%",
+              width: `${reports.length ? (resolved / reports.length) * 100 : 0}%`,
+              backgroundColor: "#209c78",
+              borderRadius: 5,
+            }}
+          />
+        </View>
+      </Card>
+      <AdminSection
+        title="Quick actions"
+        caption="Keep your community moving"
+      />
+      <AdminLink
+        title="Review complaints"
+        subtitle="Open reports, assign officers and take action"
+        icon="documents-outline"
+        onPress={() => nav.navigate("/Main/Complaints")}
+      />
+      {app.user!.role === "admin" && (
+        <AdminLink
+          title="Manage your team"
+          subtitle="People, roles and account access"
+          icon="people-outline"
+          tone="violet"
+          onPress={() => nav.navigate({ pathname: "/Users", params: {} })}
+        />
+      )}
+      <AdminSection
+        title="Recent complaints"
+        caption="Most recently submitted"
+        action="View all"
+        onPress={() => nav.navigate("/Main/Complaints")}
+      />
+      {recent.map((c) => (
         <ComplaintCard
           key={c.id}
           complaint={c}
@@ -88,12 +173,23 @@ export function DashboardScreen() {
           }
         />
       ))}
-      <Text style={s.section}>Complaints by Category</Text>
+      {!recent.length && (
+        <Card>
+          <Hint>No complaints yet. New citizen reports will appear here.</Hint>
+        </Card>
+      )}
+      <AdminSection
+        title="Service overview"
+        caption="Complaint volume by category"
+      />
       <CategoryChart />
     </Screen>
   );
 }
 function CategoryChart() {
+  const theme = useTheme();
+  const s = useUIStyles();
+  const a = useAdminStyles();
   const app = useApp();
   const reports = visibleComplaints(app.data, app.user!);
   const counts = app.data.categories.map((c) => ({
@@ -101,41 +197,50 @@ function CategoryChart() {
     count: reports.filter((r) => r.categoryId === c.id).length,
   }));
   const max = Math.max(1, ...counts.map((c) => c.count));
+  const colors = ["#1769df", "#b77417", "#188565", "#7450b5"];
   return (
     <Card>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "flex-end",
-          justifyContent: "space-around",
-          gap: 8,
-          minHeight: 135,
-        }}
-      >
-        {counts.map((c, i) => (
-          <View key={c.id} style={{ flex: 1, alignItems: "center", gap: 8 }}>
-            <Text style={{ color: theme.muted, fontSize: 11 }}>{c.count}</Text>
-            <View
-              style={{
-                height: Math.max(4, (c.count / max) * 80),
-                width: "80%",
-                backgroundColor: [
-                  theme.blue,
-                  "#e79125",
-                  theme.green,
-                  "#8558df",
-                ][i % 4],
-                borderRadius: 5,
-              }}
-            />
-            <Text
-              style={{ fontSize: 9, color: theme.muted, textAlign: "center" }}
-            >
+      {counts.map((c, i) => (
+        <View
+          key={c.id}
+          style={{ marginBottom: i === counts.length - 1 ? 0 : 20 }}
+        >
+          <View style={{ ...a.between, marginBottom: 9 }}>
+            <Text style={{ ...s.bold, fontSize: 12, flex: 1 }}>
               {c.name.replace(" Complaint", "")}
             </Text>
+            <Text
+              style={{
+                color: theme.dark ? theme.ink : colors[i % 4],
+                fontWeight: "800",
+                fontSize: 14,
+              }}
+            >
+              {c.count}
+            </Text>
           </View>
-        ))}
-      </View>
+          <View
+            style={{
+              height: 9,
+              backgroundColor: theme.border,
+              borderRadius: 6,
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                width: `${(c.count / max) * 100}%`,
+                height: "100%",
+                backgroundColor: colors[i % 4],
+                borderRadius: 6,
+              }}
+            />
+          </View>
+        </View>
+      ))}
+      {!counts.length && (
+        <Hint>Add service categories to see complaint volumes.</Hint>
+      )}
     </Card>
   );
 }
@@ -145,7 +250,11 @@ export function AnalyticsScreen() {
   const reports = visibleComplaints(app.data, app.user!);
   return (
     <Screen>
-      <Title>Complaint Progress</Title>
+      <AdminHero
+        title="Progress that matters"
+        subtitle="Follow the journey from a citizen report to a resolved issue."
+        eyebrow="SERVICE PERFORMANCE"
+      />
       <Hint>
         Choose a complaint to view its timeline
         {app.user!.role === "gn"
@@ -168,52 +277,113 @@ export function AnalyticsScreen() {
 export function SettingsScreen() {
   const app = useApp();
   const nav = useRouter();
+  const [restrictedSection, setRestrictedSection] = useState("");
   return (
     <Screen>
+      <AdminHero
+        title="Your workspace"
+        subtitle="Organize services, support your team and manage community resources."
+        eyebrow="MANAGEMENT HUB"
+        art="team"
+      />
+      {restrictedSection !== "" && (
+        <Card>
+          <Text accessibilityRole="alert">
+            Administrator access required. Log in with an administrator account
+            to access {restrictedSection}. Officer and GN accounts cannot manage
+            staff accounts.
+          </Text>
+          <Button title="OK" onPress={() => setRestrictedSection("")} />
+        </Card>
+      )}
       {app.user!.role === "admin" && (
         <>
-          <Row
+          <AdminSection
+            title="People & services"
+            caption="Manage the essentials in one place"
+          />
+          <AdminLink
             title="Service Categories"
-            icon="🗂️"
+            subtitle="Issue types, descriptions and priorities"
+            icon="layers-outline"
+            tone="amber"
             onPress={() => nav.navigate("/Categories")}
           />
-          <Row
+          <AdminLink
             title="User Management"
-            icon="👥"
+            subtitle="Citizen profiles and account access"
+            icon="people-outline"
+            tone="violet"
             onPress={() => nav.navigate({ pathname: "/Users", params: {} })}
           />
-          <Row
+          <AdminLink
             title="Officer Management"
-            icon="👮"
+            subtitle="Your service delivery team"
+            icon="shield-checkmark-outline"
             onPress={() =>
               nav.navigate({ pathname: "/Users", params: { role: "officer" } })
             }
           />
-          <Row
+          <AdminLink
             title="GN Management"
-            icon="👤"
+            subtitle="Local division coordinators"
+            icon="map-outline"
+            tone="mint"
             onPress={() =>
               nav.navigate({ pathname: "/Users", params: { role: "gn" } })
             }
           />
         </>
       )}
-      <Row
+      {(app.user!.role === "officer" || app.user!.role === "gn") && (
+        <>
+          <AdminSection
+            title="Team management"
+            caption="Administrator access required"
+          />
+          <AdminLink
+            title="Officer Management"
+            subtitle="Administrator access only"
+            icon="shield-checkmark-outline"
+            onPress={() => setRestrictedSection("Officer Management")}
+          />
+          <AdminLink
+            title="GN Management"
+            subtitle="Administrator access only"
+            icon="map-outline"
+            tone="mint"
+            onPress={() => setRestrictedSection("GN Management")}
+          />
+        </>
+      )}
+      <AdminSection title="Resources & account" />
+      <AdminLink
         title="Contact Finder"
-        icon="🔎"
+        subtitle="Reach the right department"
+        icon="call-outline"
+        tone="mint"
         onPress={() => nav.navigate("/Contacts")}
       />
-      <Row
+      <AdminLink
         title="My Profile"
-        icon="👤"
+        subtitle="Personal information and sign-in settings"
+        icon="person-circle-outline"
         onPress={() => nav.navigate("/OfficerProfile")}
       />
-      <Row
+      <AdminLink
         title="Help & Support"
-        icon="💬"
+        subtitle="Guidance when you need it"
+        icon="chatbubbles-outline"
+        tone="violet"
         onPress={() => nav.navigate("/Support")}
       />
-      <Row title="About App" icon="🏛️" onPress={() => nav.navigate("/About")} />
+      <AdminLink
+        title="About App"
+        subtitle="Meet Citizen Connect"
+        icon="information-circle-outline"
+        tone="amber"
+        onPress={() => nav.navigate("/About")}
+      />
     </Screen>
   );
 }
@@ -228,18 +398,37 @@ export function CategoriesScreen() {
     );
   return (
     <Screen>
-      <Row
+      <AdminHero
+        title="Community services"
+        subtitle="Organize the issues citizens can report and set service priorities."
+        eyebrow="SERVICE CATEGORIES"
+      />
+      <AdminLink
         title="Add new category"
         subtitle="Set name, issue types and priority"
-        icon="➕"
+        icon="add-circle-outline"
         onPress={() => nav.navigate({ pathname: "/CategoryEdit", params: {} })}
       />
-      {app.data.categories.map((c) => (
-        <Row
+      {app.data.categories.map((c, index) => (
+        <AdminLink
           key={c.id}
+          tone={(["blue", "amber", "mint", "violet"] as const)[index % 4]}
           title={c.name}
+          leading={<CategoryArtwork category={c} size={58} />}
           subtitle={`${c.types.length} issue types · ${c.priority} priority`}
-          icon={c.icon}
+          icon={
+            c.id === "water"
+              ? "water-outline"
+              : c.id === "road"
+                ? "construct-outline"
+                : c.id === "garbage"
+                  ? "trash-outline"
+                  : c.id === "light"
+                    ? "bulb-outline"
+                    : c.id === "environment"
+                      ? "leaf-outline"
+                      : "grid-outline"
+          }
           onPress={() =>
             nav.navigate({ pathname: "/CategoryEdit", params: { id: c.id } })
           }
@@ -249,12 +438,18 @@ export function CategoriesScreen() {
   );
 }
 export function CategoryEditScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const { id } = useLocalSearchParams<RootParams["CategoryEdit"]>();
   const app = useApp();
   const nav = useRouter();
   const existing = app.data.categories.find((c) => c.id === id);
   const [name, setName] = useState(existing?.name || "");
-  const [icon, setIcon] = useState(existing?.icon || "📌");
+  const [icon, setIcon] = useState(existing?.icon || "other");
+  const [color, setColor] = useState(existing?.color || "#e7f0ff");
+  const selectedIcon =
+    categoryPresets.find((c) => c.id === icon || c.icon === icon)?.id ||
+    "other";
   const [description, setDescription] = useState(existing?.description || "");
   const [types, setTypes] = useState(existing?.types.join("\n") || "");
   const [priority, setPriority] = useState<Priority>(
@@ -264,8 +459,88 @@ export function CategoryEditScreen() {
   const [confirm, setConfirm] = useState(false);
   return (
     <Screen>
+      <AdminHero
+        title={id ? "Refine a service" : "Create a service"}
+        subtitle="Clear categories help citizens reach the right team."
+        eyebrow="CATEGORY DETAILS"
+      />
       <Field label="Category Name" value={name} onChangeText={setName} />
-      <Field label="Icon (emoji)" value={icon} onChangeText={setIcon} />
+      <Text style={s.label}>Category illustration</Text>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Category illustration"
+        style={{
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 20,
+        }}
+      >
+        {categoryPresets.map((preset) => (
+          <Pressable
+            key={preset.id}
+            accessibilityRole="radio"
+            accessibilityLabel={preset.name}
+            accessibilityState={{ checked: selectedIcon === preset.id }}
+            aria-checked={selectedIcon === preset.id}
+            onPress={() => setIcon(preset.id)}
+            style={{
+              width: "30%",
+              flexGrow: 1,
+              alignItems: "center",
+              gap: 8,
+              padding: 12,
+              borderRadius: 18,
+              borderWidth: 2,
+              borderColor: selectedIcon === preset.id ? "#1769df" : "#e0e6ef",
+              backgroundColor: theme.surface,
+            }}
+          >
+            <CategoryArtwork category={preset} size={48} />
+            <Text
+              style={{ fontSize: 11, color: theme.ink, textAlign: "center" }}
+            >
+              {preset.name.replace(" Complaint", "")}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={s.label}>Accent color</Text>
+      <View
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Category accent color"
+        style={{
+          flexDirection: "row",
+          gap: 8,
+          flexWrap: "wrap",
+          marginBottom: 20,
+        }}
+      >
+        {Object.entries(adminColors).map(([label, value]) => (
+          <Pressable
+            key={label}
+            accessibilityRole="radio"
+            accessibilityLabel={label}
+            accessibilityState={{ checked: color === value.background }}
+            aria-checked={color === value.background}
+            onPress={() => setColor(value.background)}
+            style={{
+              minHeight: 44,
+              padding: 12,
+              backgroundColor: value.background,
+              borderRadius: 14,
+              borderWidth: 2,
+              borderColor:
+                color === value.background ? value.ink : "transparent",
+            }}
+          >
+            <Text style={{ color: value.ink, fontWeight: "700", fontSize: 12 }}>
+              {color === value.background ? "Selected: " : ""}
+              {label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
       <Field
         label="Description"
         multiline
@@ -290,10 +565,12 @@ export function CategoryEditScreen() {
         busy={app.busy}
         onPress={async () => {
           const category: Category = {
+            ...existing,
+            artwork: selectedIcon,
             id: id || uid(),
             name: name.trim(),
             icon,
-            color: existing?.color || "#eaf2ff",
+            color,
             description,
             types: [
               ...new Set(
@@ -335,6 +612,8 @@ export function CategoryEditScreen() {
   );
 }
 export function UsersScreen() {
+  const s = useUIStyles();
+  const a = useAdminStyles();
   const { role } = useLocalSearchParams<RootParams["Users"]>();
   const app = useApp();
   const nav = useRouter();
@@ -345,7 +624,7 @@ export function UsersScreen() {
     .filter(
       (u) =>
         (!role || u.role === role) &&
-        `${u.name} ${u.email} ${u.division}`
+        `${u.name} ${u.nameSi || ""} ${u.email} ${u.division}`
           .toLowerCase()
           .includes(search.toLowerCase()) &&
         (filter === "All" || (filter === "Active" ? u.active : !u.active)),
@@ -359,6 +638,26 @@ export function UsersScreen() {
     );
   return (
     <Screen>
+      <AdminHero
+        title={
+          role === "gn"
+            ? "Local coordinators"
+            : role === "officer"
+              ? "Your service team"
+              : "People & access"
+        }
+        subtitle="Find profiles, review roles and manage account access."
+        eyebrow="TEAM DIRECTORY"
+        art="team"
+      />
+      <View style={{ ...a.between, marginBottom: 16 }}>
+        <Text style={a.section}>
+          {people.length} {people.length === 1 ? "person" : "people"}
+        </Text>
+        <Text style={a.caption}>
+          {people.filter((u) => u.active).length} active in this view
+        </Text>
+      </View>
       <Search
         value={search}
         onChangeText={setSearch}
@@ -385,9 +684,16 @@ export function UsersScreen() {
         >
           <View style={s.between}>
             <View style={s.inline}>
-              <Text style={{ fontSize: 29 }}>👤</Text>
+              <StaffAvatar
+                name={u.name}
+                role={u.role}
+                imageUrl={u.imageUrl}
+                avatarKey={u.avatarKey}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={s.bold}>{u.name}</Text>
+                {u.nameSi && <Hint>{u.nameSi}</Hint>}
+                {u.sampleDataset && <Hint>Sample profile</Hint>}
                 <Hint>
                   {u.role === "gn"
                     ? "Grama Niladhari"
@@ -420,6 +726,7 @@ export function UsersScreen() {
   );
 }
 export function UserEditScreen() {
+  const s = useUIStyles();
   const { id, role: initialRole } =
     useLocalSearchParams<RootParams["UserEdit"]>();
   const app = useApp();
@@ -439,6 +746,12 @@ export function UserEditScreen() {
   const [error, setError] = useState("");
   return (
     <Screen>
+      <AdminHero
+        title={id ? "Account details" : "New team member"}
+        subtitle="Review profile information, role and account access."
+        eyebrow="PEOPLE & ACCESS"
+        art="team"
+      />
       <Field label="Name" value={name} onChangeText={setName} />
       <Field
         label="Email"
@@ -480,6 +793,7 @@ export function UserEditScreen() {
           }
           try {
             await app.saveUser({
+              ...existing,
               id: id || uid(),
               name: name.trim(),
               email: email.trim(),
@@ -500,6 +814,7 @@ export function UserEditScreen() {
   );
 }
 export function ContactsScreen() {
+  const s = useUIStyles();
   const app = useApp();
   const nav = useRouter();
   const [search, setSearch] = useState("");
@@ -513,6 +828,11 @@ export function ContactsScreen() {
   };
   return (
     <Screen>
+      <AdminHero
+        title="The right connection"
+        subtitle="Contact the departments that keep your community running."
+        eyebrow="CONTACT DIRECTORY"
+      />
       <Search
         value={search}
         onChangeText={setSearch}
@@ -530,11 +850,13 @@ export function ContactsScreen() {
             <View style={{ flexDirection: "row", gap: 10 }}>
               <Button
                 title="Call"
+                disabled={!!c.sampleDataset}
                 secondary
                 onPress={() => open(`tel:${c.phone.replace(/\s/g, "")}`)}
               />
               <Button
                 title="Email"
+                disabled={!!c.sampleDataset}
                 secondary
                 onPress={() => open(`mailto:${c.email}`)}
               />
@@ -578,6 +900,11 @@ export function ContactEditScreen() {
   const [confirm, setConfirm] = useState(false);
   return (
     <Screen>
+      <AdminHero
+        title={id ? "Update a contact" : "Add a department"}
+        subtitle="Keep official contact information easy to find."
+        eyebrow="CONTACT DETAILS"
+      />
       <Field label="Department / Service" value={name} onChangeText={setName} />
       <Field
         label="Phone"
@@ -606,6 +933,7 @@ export function ContactEditScreen() {
           }
           try {
             const contact: Contact = {
+              ...c,
               id: id || uid(),
               name: name.trim(),
               phone,

@@ -1,0 +1,15 @@
+{
+  "name": "citizen-connect-sample-importer",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "preview": "node --experimental-strip-types run.mjs --preview",
+    "test": "node --experimental-strip-types --test importer.test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "14.5.0"
+  }
+}
