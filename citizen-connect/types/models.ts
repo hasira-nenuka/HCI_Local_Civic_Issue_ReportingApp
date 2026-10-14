@@ -1,7 +1,10 @@
 export type Role = "citizen" | "officer" | "gn" | "admin";
 export type Status = "Submitted" | "Assigned" | "In Progress" | "Resolved";
 export type Priority = "Low" | "Medium" | "High";
-export interface User {
+export interface SampleRecord {
+  sampleDataset?: string;
+}
+export interface User extends SampleRecord {
   id: string;
   name: string;
   email: string;
@@ -12,8 +15,10 @@ export interface User {
   province: string;
   active: boolean;
   imageUrl?: string;
+  nameSi?: string;
+  avatarKey?: string;
 }
-export interface Category {
+export interface Category extends SampleRecord {
   id: string;
   name: string;
   icon: string;
@@ -21,13 +26,14 @@ export interface Category {
   description: string;
   types: string[];
   priority: Priority;
+  artwork?: string;
 }
 export interface HistoryEntry {
   status: Status;
   at: string;
   note?: string;
 }
-export interface Complaint {
+export interface Complaint extends SampleRecord {
   id: string;
   reference: string;
   citizenId: string;
@@ -51,7 +57,7 @@ export interface Complaint {
   history: HistoryEntry[];
   feedback?: { rating: number; comment: string };
 }
-export interface AppNotification {
+export interface AppNotification extends SampleRecord {
   id: string;
   userId: string;
   complaintId: string;
@@ -60,7 +66,7 @@ export interface AppNotification {
   createdAt: string;
   read: boolean;
 }
-export interface Contact {
+export interface Contact extends SampleRecord {
   id: string;
   name: string;
   phone: string;

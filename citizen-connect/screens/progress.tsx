@@ -12,15 +12,19 @@ import {
   Hint,
   Radio,
   Screen,
-  s,
+  useUIStyles,
 } from "../components/ui";
 import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
 import { canManage, dateLabel, visibleComplaints } from "../utils/complaints";
 import { statuses } from "../constants/catalog";
-import { theme } from "../constants/theme";
+import { AdminHero } from "../components/AdminDesign";
+import { useTheme } from "../hooks/AppearanceContext";
 import { Priority, Status } from "../types/models";
+import { CitizenHero } from "../components/CitizenDesign";
 export function TrackScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const { id } = useLocalSearchParams<RootParams["Track"]>();
   const app = useApp();
   const c = visibleComplaints(app.data, app.user!).find((c) => c.id === id);
@@ -38,6 +42,21 @@ export function TrackScreen() {
     );
   return (
     <Screen>
+      {app.user!.role === "citizen" && (
+        <CitizenHero
+          title="Follow the progress"
+          subtitle="From your first report to the final resolution. Updates appear here as your service team takes action."
+          eyebrow="REPORT TIMELINE"
+          art={false}
+        />
+      )}
+      {app.user!.role !== "citizen" && (
+        <AdminHero
+          title="Move an issue forward"
+          subtitle="Review the timeline and keep citizens informed."
+          eyebrow="COMPLAINT WORKFLOW"
+        />
+      )}
       <Card>
         <View style={s.between}>
           <View>
@@ -68,7 +87,7 @@ export function TrackScreen() {
                   />
                 )}
               </View>
-              <View>
+              <View style={{ flex: 1, paddingBottom: 18 }}>
                 <Text style={s.bold}>{item}</Text>
                 {entry && (
                   <Hint>
@@ -158,6 +177,7 @@ export function TrackScreen() {
   );
 }
 export function AssignScreen() {
+  const s = useUIStyles();
   const { id } = useLocalSearchParams<RootParams["Assign"]>();
   const app = useApp();
   const nav = useRouter();
@@ -174,7 +194,12 @@ export function AssignScreen() {
     );
   return (
     <Screen>
-      <Text style={{ ...s.bold, marginBottom: 20 }}>Assign complaint</Text>
+      <AdminHero
+        title="Assign complaint"
+        subtitle="Choose the right officer and provide a clear handover."
+        eyebrow="TEAM COORDINATION"
+        art="team"
+      />
       <Text style={s.label}>Officer name</Text>
       {app.data.users
         .filter((u) => u.role === "officer" && u.active)

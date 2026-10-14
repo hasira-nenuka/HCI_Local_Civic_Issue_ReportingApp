@@ -1,39 +1,62 @@
+import { useTheme } from "../hooks/AppearanceContext";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
-import { Image, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Text, View } from "react-native";
 import {
   Button,
   Card,
+  Chips,
   ErrorText,
   Field,
   Hint,
   Row,
   Screen,
   Title,
-  s,
+  useUIStyles,
 } from "../components/ui";
 import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
-import { VisualIcon } from "../components/Artwork";
+import { AdminHero, StaffAvatar } from "../components/AdminDesign";
+import { VisualIcon, CommunityArtwork } from "../components/Artwork";
 import { dateLabel } from "../utils/complaints";
 import { pickPhoto } from "../services/media";
+import { CitizenHero, CitizenSection } from "../components/CitizenDesign";
+import { userNotifications, unreadCount } from "../utils/notifications";
 export function ProfileScreen() {
+  const s = useUIStyles();
   const app = useApp();
   const nav = useRouter();
   const [error, setError] = useState("");
   return (
     <Screen>
+      {app.user!.role === "citizen" && (
+        <CitizenHero
+          title="Your community profile"
+          subtitle="Your details, preferences and account essentials."
+          eyebrow="MY ACCOUNT"
+          art={false}
+        />
+      )}
+      {app.user!.role !== "citizen" && (
+        <AdminHero
+          title="Your account"
+          subtitle="Keep your profile current and manage your sign-in settings."
+          eyebrow="PERSONAL WORKSPACE"
+          art="team"
+        />
+      )}
       <View style={{ ...s.inline, marginBottom: 25 }}>
-        {app.user!.imageUrl ? (
-          <Image
-            source={{ uri: app.user!.imageUrl }}
-            style={{ width: 70, height: 70, borderRadius: 35 }}
-          />
-        ) : (
-          <VisualIcon symbol="👤" size={52} />
-        )}
-        <View>
+        <StaffAvatar
+          name={app.user!.name}
+          role={app.user!.role}
+          imageUrl={app.user!.imageUrl}
+          avatarKey={app.user!.avatarKey}
+          size={70}
+        />
+        <View style={{ flex: 1 }}>
           <Title>{app.user!.name}</Title>
+          {app.user!.nameSi && <Hint>{app.user!.nameSi}</Hint>}
+          {app.user!.sampleDataset && <Hint>Fictional sample profile</Hint>}
           <Hint>
             {app.user!.phone}
             {"\n"}
@@ -84,15 +107,22 @@ export function EditProfileScreen() {
   const [error, setError] = useState("");
   return (
     <Screen>
+      {app.user!.role === "citizen" && (
+        <CitizenHero
+          title="Make it yours"
+          subtitle="Keep your contact details up to date."
+          eyebrow="EDIT PROFILE"
+          art={false}
+        />
+      )}
       <View style={{ alignItems: "center", marginBottom: 20 }}>
-        {image ? (
-          <Image
-            source={{ uri: image }}
-            style={{ width: 85, height: 85, borderRadius: 45 }}
-          />
-        ) : (
-          <VisualIcon symbol="👤" size={60} />
-        )}
+        <StaffAvatar
+          name={app.user!.name}
+          role={app.user!.role}
+          imageUrl={image}
+          avatarKey={app.user!.avatarKey}
+          size={85}
+        />
         <Button
           title="Change Photo"
           secondary
@@ -146,6 +176,14 @@ export function PasswordScreen() {
   const [message, setMessage] = useState("");
   return (
     <Screen>
+      {app.user!.role === "citizen" && (
+        <CitizenHero
+          title="Keep your account secure"
+          subtitle="Choose a unique password you don't use elsewhere."
+          eyebrow="ACCOUNT SECURITY"
+          art={false}
+        />
+      )}
       <Hint>
         {app.cloud
           ? "Confirm your current password before choosing a new one."
@@ -193,10 +231,15 @@ export function PasswordScreen() {
   );
 }
 export function SupportScreen() {
+  const s = useUIStyles();
   const nav = useRouter();
   return (
     <Screen>
-      <Title>How can we help?</Title>
+      <CitizenHero
+        title="How can we help?"
+        subtitle="A little guidance for a smoother community reporting experience."
+        eyebrow="HELP & SUPPORT"
+      />
       <Card>
         <Text style={s.bold}>Reporting an issue</Text>
         <Hint>
@@ -214,8 +257,9 @@ export function SupportScreen() {
       <Card>
         <Text style={s.bold}>Location permission</Text>
         <Hint>
-          If GPS is unavailable, enter latitude, longitude and a nearby landmark
-          on the confirmation screen.
+          GPS and photos are optional. Enter an address or nearby landmark so
+          your service team can find the issue. Coordinates can be added if
+          available.
         </Hint>
       </Card>
       <Button
@@ -229,7 +273,7 @@ export function AboutScreen() {
   return (
     <Screen>
       <View style={{ alignItems: "center", marginVertical: 30 }}>
-        <VisualIcon symbol="🏛️" size={64} />
+        <CommunityArtwork size={150} animated />
         <Title>Citizen Connect</Title>
         <Hint>Local Civic-Issue Reporting System · Version 1.0</Hint>
       </View>
@@ -248,32 +292,80 @@ export function AboutScreen() {
   );
 }
 export function NotificationsScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const app = useApp();
   const nav = useRouter();
   const [error, setError] = useState("");
-  const list = app.data.notifications.filter((n) => n.userId === app.user!.id);
+  const [filter, setFilter] = useState("All");
+  const [opening, setOpening] = useState(false);
+  const all = userNotifications(app.data.notifications, app.user!.id);
+  const unread = unreadCount(all, app.user!.id);
+  const list = all.filter((n) => filter === "All" || !n.read);
   return (
     <Screen>
+      {app.user!.role === "citizen" && (
+        <CitizenHero
+          title="You're in the loop"
+          subtitle="Report confirmations, assignments and progress updates, all in one place."
+          eyebrow="NOTIFICATIONS"
+          art={false}
+        />
+      )}
+      {app.user!.role !== "citizen" && (
+        <AdminHero
+          title="Stay in the loop"
+          subtitle="Your latest complaint updates, in one place."
+          eyebrow="NOTIFICATIONS"
+        />
+      )}
       <ErrorText message={error} />
+      <CitizenSection
+        title={unread ? `${unread} unread updates` : "You're all caught up"}
+        caption="Latest updates appear first. Open an update to mark it as read."
+      />
+      <Chips items={["All", "Unread"]} value={filter} onChange={setFilter} />
       {list.map((n) => (
         <Card
           key={n.id}
+          style={{
+            backgroundColor: n.read ? theme.surface : theme.softBlue,
+            borderLeftWidth: n.read ? 1 : 4,
+            borderLeftColor: n.read ? theme.border : theme.blue,
+          }}
           onPress={async () => {
+            if (opening || app.busy) return;
+            setOpening(true);
+            setError("");
             try {
-              await app.readNotification(n.id);
+              if (!n.read) await app.readNotification(n.id);
               nav.navigate({
                 pathname: "/NotificationDetail",
                 params: { id: n.id },
               });
             } catch (e) {
               setError((e as Error).message);
+            } finally {
+              setOpening(false);
             }
           }}
         >
           <View style={s.inline}>
-            <Text style={{ fontSize: 25 }}>{n.read ? "🔔" : "🔵"}</Text>
+            <VisualIcon symbol="notifications" size={25} />
             <View style={{ flex: 1 }}>
               <Text style={s.bold}>{n.title}</Text>
+              {!n.read && (
+                <Text
+                  style={{
+                    color: theme.blue,
+                    fontSize: 11,
+                    fontWeight: "700",
+                    marginTop: 4,
+                  }}
+                >
+                  New update
+                </Text>
+              )}
               <Hint>
                 {n.body}
                 {"\n"}
@@ -285,20 +377,34 @@ export function NotificationsScreen() {
       ))}
       {!list.length && (
         <Card>
-          <Hint>You have no notifications yet.</Hint>
+          <Hint>
+            {filter === "Unread"
+              ? "No unread updates. You are all caught up."
+              : "No updates yet. Submit a report and its updates will appear here."}
+          </Hint>
         </Card>
       )}
     </Screen>
   );
 }
 export function NotificationDetailScreen() {
+  const s = useUIStyles();
   const { id } = useLocalSearchParams<RootParams["NotificationDetail"]>();
   const app = useApp();
   const nav = useRouter();
   const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const n = app.data.notifications.find(
     (n) => n.id === id && n.userId === app.user!.id,
   );
+  useEffect(() => {
+    if (n && !n.read)
+      void app
+        .readNotification(n.id)
+        .catch((e) => setError((e as Error).message));
+    // Mark direct links as read too; retry is available by reopening the update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [n?.id]);
   if (!n)
     return (
       <Screen>
@@ -307,10 +413,12 @@ export function NotificationDetailScreen() {
     );
   return (
     <Screen>
-      <View style={{ alignItems: "center", marginTop: 20, marginBottom: 30 }}>
-        <VisualIcon symbol="🔔" size={60} />
-        <Title>{n.title}</Title>
-      </View>
+      <CitizenHero
+        title={n.title}
+        subtitle="An update from your community service team."
+        eyebrow="REPORT UPDATE"
+        art={false}
+      />
       <Card>
         <Text style={s.bold}>Complaint update</Text>
         <Hint>{n.body}</Hint>
@@ -323,9 +431,14 @@ export function NotificationDetailScreen() {
         }
       />
       <Button
-        title="Delete Notification"
+        title={confirmDelete ? "Confirm deletion" : "Delete Notification"}
         danger
+        busy={app.busy}
         onPress={async () => {
+          if (!confirmDelete) {
+            setConfirmDelete(true);
+            return;
+          }
           try {
             await app.deleteNotification(id);
             nav.back();
@@ -334,6 +447,14 @@ export function NotificationDetailScreen() {
           }
         }}
       />
+      {confirmDelete && (
+        <Button
+          title="Keep notification"
+          secondary
+          disabled={app.busy}
+          onPress={() => setConfirmDelete(false)}
+        />
+      )}
       <ErrorText message={error} />
     </Screen>
   );

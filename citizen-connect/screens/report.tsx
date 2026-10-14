@@ -11,17 +11,20 @@ import {
   Radio,
   Screen,
   Search,
-  s,
+  useUIStyles,
 } from "../components/ui";
-import { VisualIcon } from "../components/Artwork";
+import { VisualIcon, CategoryArtwork } from "../components/Artwork";
+import { CitizenSection } from "../components/CitizenDesign";
 import LocationMap from "../components/LocationMap";
 import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
 import { ComplaintDraft } from "../types/models";
 import { areas, authorities, issueTitle } from "../constants/catalog";
-import { theme } from "../constants/theme";
+import { useTheme } from "../hooks/AppearanceContext";
 import { pickPhoto } from "../services/media";
 export function ReportWizardScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const { categoryId } = useLocalSearchParams<RootParams["ReportWizard"]>();
   const app = useApp();
   const nav = useRouter();
@@ -51,7 +54,7 @@ export function ReportWizardScreen() {
       </Screen>
     );
   const titles = [
-    `What type of ${categoryId === "other" ? "other" : category.name.replace(" Complaint", "").toLowerCase()} issue is it?`,
+    "What kind of issue are you reporting?",
     "Select Area",
     "Select Local Authority",
     "Report Issue",
@@ -147,6 +150,15 @@ export function ReportWizardScreen() {
   }
   return (
     <Screen>
+      <Card style={{ backgroundColor: theme.softBlue }}>
+        <View style={s.inline}>
+          <CategoryArtwork category={category} size={60} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...s.bold, fontSize: 18 }}>{category.name}</Text>
+            <Hint>One step closer to a better community.</Hint>
+          </View>
+        </View>
+      </Card>
       <Hint>
         {issueTitle(categoryId)} · Step {step + 1} of 5
       </Hint>
@@ -156,14 +168,25 @@ export function ReportWizardScreen() {
             key={i}
             style={{
               flex: 1,
-              height: 3,
+              height: 6,
               borderRadius: 5,
               backgroundColor: i <= step ? theme.blue : theme.border,
             }}
           />
         ))}
       </View>
-      <Text style={{ ...s.bold, marginBottom: 20 }}>{titles[step]}</Text>
+      <CitizenSection
+        title={titles[step]}
+        caption={
+          [
+            "Choose the closest match to help us direct your report.",
+            "Where did you notice the issue?",
+            "Select the service team responsible for this area.",
+            "A clear description helps your team respond.",
+            "Add an address or landmark. GPS is optional.",
+          ][step]
+        }
+      />
       {step < 3 && (
         <>
           {step > 0 && (
@@ -202,7 +225,7 @@ export function ReportWizardScreen() {
       )}
       {step === 3 && (
         <>
-          <Card style={{ backgroundColor: "#eaf2ff" }}>
+          <Card style={{ backgroundColor: theme.softBlue }}>
             <View style={s.between}>
               <Text style={{ ...s.bold, color: theme.blue }}>
                 {draft.issueType}
@@ -223,7 +246,7 @@ export function ReportWizardScreen() {
                 height: 130,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "#edf3fa",
+                backgroundColor: theme.softBlue,
               }}
             >
               <VisualIcon symbol="📷" size={35} />

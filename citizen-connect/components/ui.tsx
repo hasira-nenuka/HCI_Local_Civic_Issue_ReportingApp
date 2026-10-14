@@ -11,9 +11,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { VisualIcon } from "./Artwork";
-import { theme } from "../constants/theme";
+import { AppTheme } from "../constants/theme";
+import { useTheme } from "../hooks/AppearanceContext";
 import { Status } from "../types/models";
 export function Screen({ children }: React.PropsWithChildren) {
+  const s = useUIStyles();
   return (
     <ScrollView
       style={s.screen}
@@ -25,9 +27,11 @@ export function Screen({ children }: React.PropsWithChildren) {
   );
 }
 export function Title({ children }: React.PropsWithChildren) {
+  const s = useUIStyles();
   return <Text style={s.title}>{children}</Text>;
 }
 export function Hint({ children }: React.PropsWithChildren) {
+  const s = useUIStyles();
   return <Text style={s.hint}>{children}</Text>;
 }
 export function Card({
@@ -35,6 +39,7 @@ export function Card({
   onPress,
   style,
 }: React.PropsWithChildren<{ onPress?: () => void; style?: object }>) {
+  const s = useUIStyles();
   return onPress ? (
     <Pressable
       accessibilityRole="button"
@@ -62,6 +67,8 @@ export function Button({
   disabled?: boolean;
   busy?: boolean;
 }) {
+  const theme = useTheme();
+  const s = useUIStyles();
   return (
     <Pressable
       accessibilityRole="button"
@@ -92,6 +99,8 @@ export function Button({
   );
 }
 export function Field({ label, ...props }: TextInputProps & { label: string }) {
+  const theme = useTheme();
+  const s = useUIStyles();
   return (
     <View style={{ marginBottom: 14 }}>
       <Text style={s.label}>{label}</Text>
@@ -117,6 +126,8 @@ export function Search({
   onChangeText: (value: string) => void;
   placeholder?: string;
 }) {
+  const theme = useTheme();
+  const s = useUIStyles();
   return (
     <View style={s.search}>
       <Ionicons name="search-outline" color={theme.muted} size={19} />
@@ -140,6 +151,8 @@ export function Radio({
   selected: boolean;
   onPress: () => void;
 }) {
+  const theme = useTheme();
+  const s = useUIStyles();
   return (
     <Pressable
       accessibilityRole="radio"
@@ -148,7 +161,10 @@ export function Radio({
       onPress={onPress}
       style={[
         s.radio,
-        selected && { backgroundColor: "#eaf2ff", borderColor: theme.blue },
+        selected && {
+          backgroundColor: theme.softBlue,
+          borderColor: theme.blue,
+        },
       ]}
     >
       <Ionicons
@@ -169,6 +185,8 @@ export function Chips({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const theme = useTheme();
+  const s = useUIStyles();
   return (
     <View style={s.chips}>
       {items.map((item) => (
@@ -180,7 +198,7 @@ export function Chips({
           style={[
             s.chip,
             value === item && {
-              backgroundColor: theme.blue,
+              backgroundColor: theme.primary,
               borderColor: theme.blue,
             },
           ]}
@@ -200,6 +218,7 @@ export function Chips({
   );
 }
 export function Badge({ status }: { status: Status | "Active" | "Disabled" }) {
+  const theme = useTheme();
   const colors =
     status === "Resolved" || status === "Active"
       ? ["#e8f7f1", "#1a8a67"]
@@ -208,8 +227,8 @@ export function Badge({ status }: { status: Status | "Active" | "Disabled" }) {
         : status === "Assigned"
           ? ["#f1ebff", "#8254cc"]
           : status === "Disabled"
-            ? ["#feedef", theme.red]
-            : ["#eaf2ff", theme.blue];
+            ? [theme.softRed, theme.red]
+            : [theme.softBlue, theme.blue];
   return (
     <View
       style={{
@@ -236,6 +255,8 @@ export function Row({
   onPress: () => void;
   icon?: string;
 }) {
+  const theme = useTheme();
+  const s = useUIStyles();
   return (
     <Card onPress={onPress}>
       <View style={s.between}>
@@ -252,6 +273,7 @@ export function Row({
   );
 }
 export function ErrorText({ message }: { message: string }) {
+  const theme = useTheme();
   return message ? (
     <Text
       accessibilityRole="alert"
@@ -261,100 +283,116 @@ export function ErrorText({ message }: { message: string }) {
     </Text>
   ) : null;
 }
-export const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.bg },
-  content: { padding: 20, paddingBottom: 32, flexGrow: 1 },
-  title: { fontSize: 23, fontWeight: "700", color: theme.ink, marginBottom: 6 },
-  hint: {
-    fontSize: 12,
-    color: theme.muted,
-    lineHeight: 19,
-    marginTop: 3,
-    marginBottom: 8,
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 20,
-    backgroundColor: "white",
-    padding: 17,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: theme.blue,
-    minHeight: 50,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 12,
-    marginVertical: 7,
-  },
-  buttonText: { color: "white", fontWeight: "700", fontSize: 14 },
-  secondary: { backgroundColor: "#eaf2ff" },
-  danger: { backgroundColor: "#fceef0" },
-  label: { fontSize: 12, fontWeight: "600", color: theme.ink, marginBottom: 8 },
-  input: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 13,
-    paddingHorizontal: 13,
-    paddingVertical: 12,
-    fontSize: 13,
-    color: theme.ink,
-    minHeight: 46,
-  },
-  search: {
-    flexDirection: "row",
-    gap: 10,
-    alignItems: "center",
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 13,
-    paddingHorizontal: 12,
-    marginBottom: 15,
-  },
-  radio: {
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: "white",
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 9,
-    minHeight: 48,
-  },
-  text: { fontSize: 13, color: theme.ink, flexShrink: 1 },
-  bold: { fontSize: 14, fontWeight: "700", color: theme.ink },
-  between: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  inline: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flexShrink: 1,
-  },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginBottom: 18 },
-  chip: {
-    borderWidth: 1,
-    borderColor: theme.border,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    backgroundColor: "white",
-  },
-  section: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: theme.ink,
-    marginTop: 18,
-    marginBottom: 13,
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    screen: { flex: 1, backgroundColor: theme.bg },
+    content: { padding: 20, paddingBottom: 32, flexGrow: 1 },
+    title: {
+      fontSize: 23,
+      fontWeight: "700",
+      color: theme.ink,
+      marginBottom: 6,
+    },
+    hint: {
+      fontSize: 12,
+      color: theme.muted,
+      lineHeight: 19,
+      marginTop: 3,
+      marginBottom: 8,
+    },
+    card: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 20,
+      backgroundColor: theme.surface,
+      padding: 17,
+      marginBottom: 12,
+    },
+    button: {
+      backgroundColor: theme.primary,
+      minHeight: 50,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      padding: 12,
+      marginVertical: 7,
+    },
+    buttonText: { color: "white", fontWeight: "700", fontSize: 14 },
+    secondary: { backgroundColor: theme.softBlue },
+    danger: { backgroundColor: theme.softRed },
+    label: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: theme.ink,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 13,
+      paddingHorizontal: 13,
+      paddingVertical: 12,
+      fontSize: 13,
+      color: theme.ink,
+      minHeight: 46,
+    },
+    search: {
+      flexDirection: "row",
+      gap: 10,
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 13,
+      paddingHorizontal: 12,
+      marginBottom: 15,
+    },
+    radio: {
+      flexDirection: "row",
+      gap: 12,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.surface,
+      borderRadius: 10,
+      padding: 14,
+      marginBottom: 9,
+      minHeight: 48,
+    },
+    text: { fontSize: 13, color: theme.ink, flexShrink: 1 },
+    bold: { fontSize: 14, fontWeight: "700", color: theme.ink },
+    between: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    inline: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      flexShrink: 1,
+    },
+    chips: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginBottom: 18 },
+    chip: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 24,
+      paddingHorizontal: 16,
+      paddingVertical: 9,
+      backgroundColor: theme.surface,
+    },
+    section: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: theme.ink,
+      marginTop: 18,
+      marginBottom: 13,
+    },
+  });
+
+export function useUIStyles() {
+  const theme = useTheme();
+  return React.useMemo(() => createStyles(theme), [theme]);
+}

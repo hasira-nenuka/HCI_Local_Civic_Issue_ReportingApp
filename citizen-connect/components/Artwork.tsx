@@ -8,11 +8,74 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { theme } from "../constants/theme";
+import type { Category } from "../types/models";
 
 const community = require("../assets/illustrations/community.png");
 const submitted = require("../assets/illustrations/submitted.png");
+const operations = require("../assets/illustrations/admin-operations.png");
+const team = require("../assets/illustrations/admin-team.png");
+const illustrationSources = {
+  community,
+  submitted,
+  operations,
+  team,
+  water: require("../assets/illustrations/services/water.png"),
+  road: require("../assets/illustrations/services/road.png"),
+  garbage: require("../assets/illustrations/services/garbage.png"),
+  light: require("../assets/illustrations/services/light.png"),
+  environment: require("../assets/illustrations/services/environment.png"),
+  other: require("../assets/illustrations/services/other.png"),
+};
+const portraits: Record<string, ReturnType<typeof require>> = {
+  "portrait-woman-1": require("../assets/illustrations/portraits/portrait-woman-1.png"),
+  "portrait-woman-2": require("../assets/illustrations/portraits/portrait-woman-2.png"),
+  "portrait-man-1": require("../assets/illustrations/portraits/portrait-man-1.png"),
+  "portrait-man-2": require("../assets/illustrations/portraits/portrait-man-2.png"),
+};
+export const portraitSource = (key?: string) =>
+  key && Object.hasOwn(portraits, key) ? portraits[key] : undefined;
+export function CategoryArtwork({
+  category,
+  size = 56,
+  animated = false,
+}: {
+  category: Pick<Category, "id" | "name" | "icon"> &
+    Partial<Pick<Category, "artwork">>;
+  size?: number;
+  animated?: boolean;
+}) {
+  const keys = [
+    "water",
+    "road",
+    "garbage",
+    "light",
+    "environment",
+    "other",
+  ] as const;
+  let key: (typeof keys)[number] =
+    keys.find(
+      (k) => k === category.artwork || k === category.icon || k === category.id,
+    ) || "other";
+  if (key === "other") {
+    const name = category.name.toLowerCase();
+    if (/water/.test(name)) key = "water";
+    else if (/road/.test(name)) key = "road";
+    else if (/garbage|clean|waste/.test(name)) key = "garbage";
+    else if (/light/.test(name)) key = "light";
+    else if (/park|environment/.test(name)) key = "environment";
+  }
+  return (
+    <CommunityArtwork
+      size={size}
+      animated={animated}
+      variant={key}
+      decorative
+    />
+  );
+}
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 const symbols: Record<string, IconName> = {
+  notifications: "notifications",
   water: "water",
   road: "construct",
   garbage: "trash",
@@ -84,10 +147,12 @@ export function CommunityArtwork({
   size = 220,
   animated = false,
   variant = "community",
+  decorative = false,
 }: {
   size?: number;
   animated?: boolean;
-  variant?: "community" | "submitted";
+  variant?: keyof typeof illustrationSources;
+  decorative?: boolean;
 }) {
   const [offset] = useState(() => new Animated.Value(0));
   const [reduced, setReduced] = useState(true);
@@ -145,11 +210,18 @@ export function CommunityArtwork({
       }}
     >
       <Image
-        source={variant === "submitted" ? submitted : community}
+        source={illustrationSources[variant]}
+        accessible={!decorative}
         accessibilityLabel={
-          variant === "submitted"
-            ? "A report confirmed with a blue checkmark"
-            : "Citizens connecting with their local community"
+          decorative
+            ? undefined
+            : variant === "operations"
+              ? "Civic services dashboard illustration"
+              : variant === "team"
+                ? "Community service team illustration"
+                : variant === "submitted"
+                  ? "A report confirmed with a blue checkmark"
+                  : "Citizens connecting with their local community"
         }
         resizeMode="cover"
         style={{ width: "100%", height: "100%" }}

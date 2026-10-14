@@ -1,8 +1,11 @@
 import React from "react";
 import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Pressable, Text, View } from "react-native";
+import { unreadCount } from "../utils/notifications";
+import DashboardOptions from "../components/DashboardOptions";
 import { useApp } from "../hooks/AppContext";
-import { theme } from "../constants/theme";
+import { useTheme } from "../hooks/AppearanceContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 const icons = {
   Home: "home-outline",
@@ -13,9 +16,12 @@ const icons = {
   Settings: "settings-outline",
 } as const;
 export default function MainTabs() {
-  const { user } = useApp();
+  const theme = useTheme();
+  const { user, data } = useApp();
+  const unread = user ? unreadCount(data.notifications, user.id) : 0;
   const insets = useSafeAreaInsets();
   const citizen = user?.role === "citizen";
+  const hasDashboardOptions = !!user;
   return (
     <Tabs
       screenOptions={({ route }) => ({
@@ -24,20 +30,62 @@ export default function MainTabs() {
         headerShadowVisible: false,
         headerTitleAlign: "center",
         headerRight: () => (
-          <Ionicons
-            accessibilityRole="button"
-            accessibilityLabel="Notifications"
-            name="notifications-outline"
-            size={22}
-            color={theme.ink}
-            onPress={() => router.push("/Notifications")}
-            style={{ marginRight: 18, padding: 5 }}
-          />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                unread ? `Notifications, ${unread} unread` : "Notifications"
+              }
+              onPress={() => router.push("/Notifications")}
+              style={{
+                width: 44,
+                height: 44,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight:
+                  hasDashboardOptions && route.name === "Home" ? 0 : 10,
+              }}
+            >
+              <Ionicons
+                name="notifications-outline"
+                size={22}
+                color={theme.ink}
+              />
+              {unread > 0 && (
+                <View
+                  style={{
+                    position: "absolute",
+                    right: 0,
+                    top: 0,
+                    backgroundColor: theme.primary,
+                    borderRadius: 10,
+                    minWidth: 19,
+                    paddingHorizontal: 4,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 10,
+                      fontWeight: "800",
+                      lineHeight: 19,
+                    }}
+                  >
+                    {unread > 99 ? "99+" : unread}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+            {hasDashboardOptions && route.name === "Home" && (
+              <DashboardOptions />
+            )}
+          </View>
         ),
         tabBarActiveTintColor: theme.blue,
         tabBarInactiveTintColor: theme.muted,
         tabBarStyle: {
-          backgroundColor: "white",
+          backgroundColor: theme.surface,
           borderTopColor: theme.border,
           height: 64 + insets.bottom,
           paddingTop: 5,

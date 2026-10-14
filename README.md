@@ -83,3 +83,7 @@ docs/                     Setup, traceability, testing and viva notes
 ```
 
 GitHub remote: https://github.com/hasira-nenuka/HCI_Local_Civic_Issue_ReportingApp. Local implementation checkpoints can be reviewed with `git log --oneline`. Push when ready with `git push origin HEAD`.
+
+## Populate the app with four weeks of sample activity
+
+See [the sample-data import guide](docs/sample-data-setup.md) for 15 citizens, 8 officers, 6 GN officers, six illustrated service categories, 90 complaints, notifications, feedback and contacts. The importer previews the records first and requires local Firebase Admin credentials before writing to the real project. Existing records are preserved.

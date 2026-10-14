@@ -14,14 +14,21 @@ import {
   Screen,
   Search,
   Title,
-  s,
+  useUIStyles,
 } from "../components/ui";
 import { useApp } from "../hooks/AppContext";
 import { RootParams } from "../navigation/types";
 import { Complaint } from "../types/models";
 import { dateLabel, visibleComplaints, canManage } from "../utils/complaints";
-import { CommunityArtwork, VisualIcon } from "../components/Artwork";
-import { theme } from "../constants/theme";
+import { CommunityArtwork, CategoryArtwork } from "../components/Artwork";
+import { AdminHero } from "../components/AdminDesign";
+import { useTheme } from "../hooks/AppearanceContext";
+import {
+  CitizenHero,
+  CitizenMetrics,
+  CitizenSection,
+} from "../components/CitizenDesign";
+import { unreadCount } from "../utils/notifications";
 export function ComplaintCard({
   complaint,
   onPress,
@@ -29,14 +36,20 @@ export function ComplaintCard({
   complaint: Complaint;
   onPress: () => void;
 }) {
+  const s = useUIStyles();
+  const { data } = useApp();
+  const category = data.categories.find(
+    (c) => c.id === complaint.categoryId,
+  ) || { id: complaint.categoryId, name: complaint.category, icon: "other" };
   return (
     <Card onPress={onPress}>
       <View style={s.between}>
-        <VisualIcon symbol={complaint.categoryId} size={24} />
+        <CategoryArtwork category={category} size={44} />
         <View style={{ flex: 1 }}>
           <Text style={s.bold}>{complaint.category}</Text>
           <Hint>
             #{complaint.reference}
+            {complaint.sampleDataset ? " | Sample" : ""}
             {"\n"}
             {dateLabel(complaint.createdAt)}
           </Hint>
@@ -47,35 +60,37 @@ export function ComplaintCard({
   );
 }
 export function HomeScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const { user, data } = useApp();
   const nav = useRouter();
+  const reports = visibleComplaints(data, user!);
+  const unread = unreadCount(data.notifications, user!.id);
   return (
     <Screen>
-      <Title>Hello, {user!.name.split(" ")[0]}</Title>
-      <Hint>Together for a cleaner & safer community.</Hint>
-      <View
-        style={{
-          flexDirection: "row",
-          backgroundColor: "#eaf2ff",
-          borderRadius: 24,
-          padding: 16,
-          alignItems: "center",
-          gap: 12,
-          marginTop: 12,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text style={{ ...s.bold, fontSize: 18 }}>
-            Make your neighborhood better
-          </Text>
-          <Hint>Your voice helps the right people take action.</Hint>
-        </View>
-        <CommunityArtwork size={112} />
-      </View>
+      <CitizenHero
+        title={`Hello, ${user!.name.split(" ")[0]}`}
+        subtitle="Small actions. Better neighborhoods. Let's make a difference together."
+      />
+      <CitizenMetrics
+        items={[
+          { label: "My reports", value: reports.length, tone: "blue" },
+          {
+            label: "Open reports",
+            value: reports.filter((c) => c.status !== "Resolved").length,
+            tone: "amber",
+          },
+          {
+            label: "Resolved",
+            value: reports.filter((c) => c.status === "Resolved").length,
+            tone: "mint",
+          },
+        ]}
+      />
       <Card
         onPress={() => nav.navigate("/Category")}
         style={{
-          backgroundColor: theme.blue,
+          backgroundColor: theme.primary,
           borderColor: theme.blue,
           marginTop: 16,
           paddingVertical: 25,
@@ -101,18 +116,25 @@ export function HomeScreen() {
       />
       <Row
         title="Notifications"
-        subtitle="Check latest status updates."
+        subtitle={
+          unread
+            ? `${unread} unread updates about your reports`
+            : "You're all caught up. View your report updates."
+        }
         onPress={() => nav.navigate("/Notifications")}
         icon="🔔"
       />
-      <Text style={s.section}>Quick Categories</Text>
+      <CitizenSection
+        title="Explore services"
+        caption="Choose a service to learn more before reporting."
+      />
       <View style={{ flexDirection: "row", gap: 10 }}>
         {data.categories.slice(0, 3).map((c) => (
           <Pressable
             accessibilityRole="button"
             key={c.id}
             style={{
-              backgroundColor: c.color,
+              backgroundColor: theme.dark ? theme.surface : c.color,
               borderRadius: 13,
               flex: 1,
               padding: 15,
@@ -125,7 +147,7 @@ export function HomeScreen() {
               })
             }
           >
-            <VisualIcon symbol={c.id} size={34} />
+            <CategoryArtwork category={c} size={64} />
             <Text
               style={{
                 fontSize: 10,
@@ -145,10 +167,18 @@ export function HomeScreen() {
   );
 }
 export function CategoryScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const { data } = useApp();
   const nav = useRouter();
   return (
     <Screen>
+      <CitizenHero
+        title="What needs attention?"
+        subtitle="Choose the service that best matches your issue. We'll guide you from here."
+        eyebrow="REPORT AN ISSUE"
+        art={false}
+      />
       <Text style={s.bold}>Select a category</Text>
       <View
         style={{
@@ -171,7 +201,7 @@ export function CategoryScreen() {
             style={{
               width: "47%",
               minHeight: 145,
-              backgroundColor: "white",
+              backgroundColor: theme.dark ? theme.surface : c.color,
               borderWidth: 1,
               borderColor: theme.border,
               borderRadius: 20,
@@ -180,7 +210,7 @@ export function CategoryScreen() {
               padding: 8,
             }}
           >
-            <VisualIcon symbol={c.id} size={39} />
+            <CategoryArtwork category={c} size={74} />
             <Text
               style={{
                 fontSize: 11,
@@ -198,6 +228,8 @@ export function CategoryScreen() {
   );
 }
 export function CategoryInfoScreen() {
+  const theme = useTheme();
+  const s = useUIStyles();
   const { categoryId } = useLocalSearchParams<RootParams["CategoryInfo"]>();
   const { data } = useApp();
   const nav = useRouter();
@@ -211,15 +243,15 @@ export function CategoryInfoScreen() {
   return (
     <Screen>
       <View style={{ alignItems: "center", marginTop: 30, marginBottom: 22 }}>
-        <VisualIcon symbol={c.id} size={70} />
+        <CategoryArtwork category={c} size={180} animated />
         <Title>{c.name}</Title>
       </View>
       <Hint>{c.description}</Hint>
-      <Card style={{ backgroundColor: "#eaf2ff", marginTop: 28 }}>
+      <Card style={{ backgroundColor: theme.softBlue, marginTop: 28 }}>
         <Text style={{ ...s.bold, color: theme.blue }}>Tip</Text>
         <Hint>
-          Add a clear photo and confirm the exact location for faster
-          processing.
+          Include a clear description and an address or nearby landmark. Photos
+          and GPS coordinates are optional.
         </Hint>
       </Card>
       <Button
@@ -232,19 +264,37 @@ export function CategoryInfoScreen() {
   );
 }
 export function ReportsScreen() {
+  const s = useUIStyles();
   const { data, user } = useApp();
   const nav = useRouter();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const complaints = visibleComplaints(data, user!).filter(
-    (c) =>
-      (filter === "All" || c.status === filter) &&
-      `${c.reference} ${c.category} ${c.description} ${c.area}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-  );
+  const complaints = visibleComplaints(data, user!)
+    .filter(
+      (c) =>
+        (filter === "All" || c.status === filter) &&
+        `${c.reference} ${c.category} ${c.description} ${c.area}`
+          .toLowerCase()
+          .includes(search.toLowerCase()),
+    )
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <Screen>
+      {user!.role === "citizen" && (
+        <CitizenHero
+          title="Your voice, in action"
+          subtitle="Every report counts. Follow your community's progress here."
+          eyebrow="MY REPORTS"
+          art={false}
+        />
+      )}
+      {user!.role !== "citizen" && (
+        <AdminHero
+          title="Every issue, in focus"
+          subtitle="Search reports and filter by status to find the next action."
+          eyebrow="COMPLAINTS WORKSPACE"
+        />
+      )}
       <Search
         value={search}
         onChangeText={setSearch}
@@ -253,7 +303,7 @@ export function ReportsScreen() {
       <Chips
         items={
           user!.role === "citizen"
-            ? ["All", "In Progress", "Resolved", "Submitted"]
+            ? ["All", "Submitted", "Assigned", "In Progress", "Resolved"]
             : ["All", "Submitted", "Assigned", "In Progress", "Resolved"]
         }
         value={filter}
@@ -281,6 +331,7 @@ export function ReportsScreen() {
   );
 }
 export function ConfirmationScreen() {
+  const theme = useTheme();
   const { id } = useLocalSearchParams<RootParams["Confirmation"]>();
   const { data } = useApp();
   const nav = useRouter();
@@ -311,6 +362,7 @@ export function ConfirmationScreen() {
   );
 }
 export function DetailsScreen() {
+  const s = useUIStyles();
   const { id } = useLocalSearchParams<RootParams["Details"]>();
   const app = useApp();
   const nav = useRouter();
@@ -333,6 +385,14 @@ export function DetailsScreen() {
   }
   return (
     <Screen>
+      {app.user!.role === "citizen" && (
+        <CitizenHero
+          title="Your report details"
+          subtitle="Everything you shared, with the latest status in one place."
+          eyebrow="REPORT OVERVIEW"
+          art={false}
+        />
+      )}
       <ComplaintCard
         complaint={c}
         onPress={() => nav.navigate({ pathname: "/Track", params: { id } })}
@@ -428,6 +488,12 @@ export function EditReportScreen() {
   const [error, setError] = useState("");
   return (
     <Screen>
+      <CitizenHero
+        title="Add the details that matter"
+        subtitle="Keep your description clear so your service team can help."
+        eyebrow="EDIT REPORT"
+        art={false}
+      />
       <Hint>You can edit a report until an officer has been assigned.</Hint>
       <Field
         label="Description"

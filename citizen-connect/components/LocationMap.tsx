@@ -2,6 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { VisualIcon } from "./Artwork";
 import { Hint } from "./ui";
+import { useTheme } from "../hooks/AppearanceContext";
 export default function LocationMap({
   latitude,
   longitude,
@@ -10,11 +11,12 @@ export default function LocationMap({
   longitude: number;
   onChange?: (latitude: number, longitude: number) => void;
 }) {
+  const theme = useTheme();
   return (
     <View
       style={{
         height: 180,
-        backgroundColor: "#eaf2ff",
+        backgroundColor: theme.softBlue,
         borderRadius: 12,
         padding: 24,
         alignItems: "center",
